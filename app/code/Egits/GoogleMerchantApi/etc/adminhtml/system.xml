@@ -81,6 +81,14 @@
                     <label>Account ID</label>
                     <depends><field id="*/*/enable">1</field></depends>
                 </field>
+                <field id="data_source_id" translate="label" type="text" sortOrder="2"
+                       showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Data Source ID</label>
+                    <comment>Enter the Data Source ID created in Google Merchant Center.</comment>
+                    <depends>
+                        <field id="*/*/enable">1</field>
+                    </depends>
+                </field>
                 <field id="merchant_service_account_file" translate="label" type="Magento\Config\Block\System\Config\Form\Field\File" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="1">
                     <label>Google Merchant Service Account file</label>
                     <backend_model>Egits\GoogleMerchantApi\Model\Config\File</backend_model>
