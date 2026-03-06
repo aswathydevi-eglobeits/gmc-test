@@ -1,0 +1,46 @@
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+<?php
+/** @var $block \Egits\GoogleMerchantApi\Block\Adminhtml\System\Config\SyncNowButton */
+?>
+<script>
+    require([
+        'jquery',
+        'prototype'
+    ], function (jQuery) {
+        function SyncAllProductsInQueue() {
+            params = {};
+
+            new Ajax.Request('<?=  /* @noEscape */ $block->getAjaxUrl() ?>', {
+                loaderArea: false,
+                asynchronous: true,
+                parameters: params,
+                onSuccess: function (transport) {
+                    var messageContainer = jQuery('#sync-now-button-message');
+                    var response = JSON.parse(transport.responseText);
+                    if (response.error) {
+                        messageContainer.removeClass('message message-error')
+                            .addClass('message message-error').html(response.message);
+                    } else {
+                        messageContainer.removeClass('message message-success')
+                            .addClass('message message-success').html(response.message);
+                    }
+                }
+            });
+        }
+
+        jQuery('#sync_now_products').click(function () {
+            SyncAllProductsInQueue();
+        });
+    });
+</script>
+
+<?= $block->getButtonHtml() ?>
+<div id="sync-now-button-message"></div>

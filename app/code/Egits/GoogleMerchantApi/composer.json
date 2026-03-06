@@ -1,0 +1,27 @@
+{
+    "name": "eglobe-it-solutions/googlemerchantapi",
+    "description": "Google Merchant API integration by eGlobe",
+    "require": {
+        "google/apiclient": "^2.2"
+    },
+    "type": "magento2-module",
+    "version": "2.3.0",
+    "license": [
+        "Commercial"
+    ],
+    "authors": [
+        {
+            "name": "eGlobe IT Solutions Pvt Ltd.",
+            "email": "hello@eglobeits.com",
+            "homepage": "https://www.eglobeits.com",
+            "role": "Developer"
+        }],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Egits\\GoogleMerchantApi\\": ""
+        }
+    }
+}

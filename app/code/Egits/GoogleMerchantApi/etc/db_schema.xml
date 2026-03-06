@@ -1,0 +1,133 @@
+<?xml version="1.0" ?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="egits_google_products" resource="default" engine="innodb"
+           comment="Google Products Table">
+        <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column name="product_store_id" xsi:type="smallint" unsigned="true" nullable="false" identity="false"/>
+        <column xsi:type="int" name="product_id" unsigned="true" nullable="false" identity="false"
+                comment="Product ID"/>
+        <column name="gcontent_product_id" nullable="true" xsi:type="varchar" comment="Google Content Item Id"
+                length="255"/>
+        <column name="status" nullable="false" xsi:type="smallint" comment="Product Status" default="0"
+                identity="false"/>
+        <column name="added_date" nullable="false" xsi:type="datetime" comment="Added Date"/>
+        <column name="updated_date" nullable="false" xsi:type="datetime" comment="Updated Date"/>
+        <column name="last_synced" nullable="true" xsi:type="datetime" comment="Last Synced"/>
+        <column name="expire_at" nullable="true" xsi:type="datetime" comment="Expire At"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="EGITS_GOOGLE_PRODUCTS_PRODUCT_STORE_ID_STORE_STORE_ID"
+                    table="egits_google_products" column="product_store_id" referenceTable="store"
+                    referenceColumn="store_id" onDelete="CASCADE"/>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_PRODUCT_STORE_ID_PRODUCT_ID" indexType="btree">
+            <column name="product_store_id"/>
+            <column name="product_id"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_PRODUCT_ID" indexType="btree">
+            <column name="product_id"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_GOOGLE_CONTENT_PRODUCT_ID" indexType="btree">
+            <column name="gcontent_product_id"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_UPDATED_DATE" indexType="btree">
+            <column name="updated_date"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_PRODUCTS_LAST_SYNCED" indexType="btree">
+            <column name="last_synced"/>
+        </index>
+        <index referenceId="EGITS_GOOGLE_MERCHANT_PRODUCTS_EXPIRE_AT" indexType="btree">
+            <column name="expire_at"/>
+        </index>
+    </table>
+    <table name="egits_google_attribute_map_type" resource="default" engine="innodb"
+           comment="Google Attribute Map Type">
+        <column name="type_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Type Id"/>
+        <column name="name" xsi:type="varchar" length="255" nullable="false" comment="Mapping Name"/>
+        <column name="target_country" xsi:type="varchar" length="2" nullable="false" comment="Target Country"/>
+        <column name="store_id" xsi:type="smallint" unsigned="true" nullable="false" identity="false" comment="Store Id"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="type_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="EGITS_GOOGLE_ATTRIBUTE_MAP_TYPE_STORE_ID_STORE_STORE_ID"
+                    table="egits_google_attribute_map_type" column="store_id" referenceTable="store"
+                    referenceColumn="store_id" onDelete="CASCADE"/>
+        <index referenceId="EGITS_GOOGLE_ATTRIBUTE_MAP_TYPE_TARGET_COUNTRY_STORE_ID" indexType="btree">
+            <column name="target_country"/>
+            <column name="store_id"/>
+        </index>
+    </table>
+    <table name="egits_google_attribute_map" resource="default" engine="innodb"
+           comment="Google Attribute Mapping">
+        <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column name="attr_id" xsi:type="int" padding="10" unsigned="true" nullable="false" comment="Attribute Id"/>
+        <column name="google_attribute" xsi:type="varchar" length="255"  nullable="false" comment="Google Attribute Id"/>
+        <column name="type_id" xsi:type="int" padding="10" unsigned="true" nullable="false" comment="Mapping Type Id"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="EGITS_GOOGLE_ATTR_MAP_TYPE_ID_EGITS_GOOGLE_ATTR_MAP_TYPE_TYPE_ID"
+                    table="egits_google_attribute_map" column="type_id" referenceTable="egits_google_attribute_map_type"
+                    referenceColumn="type_id" onDelete="CASCADE"/>
+    </table>
+    <table name="egits_google_category_mapping" resource="default" engine="innodb"
+           comment="Category Mapping">
+        <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column xsi:type="int" name="category_id" unsigned="true" nullable="false" identity="false"
+                comment="Category Id"/>
+        <column name="google_category_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="false" comment="Google Category Id"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+    <table name="egits_google_product_filter" resource="default" engine="innodb"
+           comment="Google Product Filter">
+        <column name="filter_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column name="store_id" xsi:type="smallint" unsigned="true" nullable="false" identity="false" comment="Store Id"/>
+        <column name="filter_name" xsi:type="varchar" length="255" nullable="false" comment="Filter Name"/>
+        <column name="conditions" xsi:type="mediumtext" nullable="false" comment="Conditions"/>
+        <column name="is_active" xsi:type="smallint" unsigned="true" nullable="false" identity="false"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="filter_id"/>
+        </constraint>
+    </table>
+    <table name="egits_google_api_log" resource="default" engine="innodb"
+           comment="Google Api Logs">
+        <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column name="store_id" xsi:type="smallint" unsigned="true" nullable="false" identity="false" comment="Store Id"/>
+        <column name="log_level" xsi:type="smallint" padding="6" unsigned="true" nullable="false" identity="false"/>
+        <column name="sync_type" xsi:type="varchar" length="255" nullable="false"/>
+        <column name="message" xsi:type="text" nullable="false" comment="Message"/>
+        <column name="date" nullable="false" xsi:type="datetime" comment="Created Date"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="EGITS_GOOGLE_MERCHANT_API_LOG_STORE_ID_STORE_STORE_ID"
+                    table="egits_google_api_log" column="store_id" referenceTable="store"
+                    referenceColumn="store_id" onDelete="CASCADE"/>
+        <index referenceId="EGITS_GOOGLE_MERCHANT_API_LOG_STORE_ID" indexType="btree">
+            <column name="store_id"/>
+        </index>
+    </table>
+    <table name="egits_google_category_priority" resource="default" engine="innodb"
+           comment="Category Priority">
+        <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity Id"/>
+        <column name="category_id" xsi:type="int" unsigned="true" nullable="false" comment="Category Id"/>
+        <column name="priority" xsi:type="int" padding="10" unsigned="true" nullable="true" comment="Priority"/>
+        <column name="type" xsi:type="varchar" length="255" nullable="true" comment="Type"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+</schema>

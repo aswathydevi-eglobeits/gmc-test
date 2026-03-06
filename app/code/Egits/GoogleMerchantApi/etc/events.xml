@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="catalog_product_save_after">
+        <observer name="egits_google_merchant_api_add_to_queue" instance="Egits\GoogleMerchantApi\Observer\AddProductQueue" />
+    </event>
+    <event name="catalog_product_delete_before">
+        <observer name="egits_google_merchant_api_remove_item" instance="Egits\GoogleMerchantApi\Observer\RemoveItem" />
+    </event>
+    <event name="catalog_category_delete_before">
+        <observer name="egits_google_merchant_delete_category_mapping" instance="Egits\GoogleMerchantApi\Observer\CategoryDeleteBefore" />
+    </event>
+</config>

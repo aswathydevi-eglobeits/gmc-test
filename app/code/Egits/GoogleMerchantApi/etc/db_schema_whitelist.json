@@ -1,0 +1,94 @@
+{
+    "egits_google_products": {
+        "column": {
+            "entity_id": true,
+            "product_store_id": true,
+            "product_id": true,
+            "gcontent_product_id": true,
+            "status": true,
+            "added_date": true,
+            "updated_date": true,
+            "last_synced": true,
+            "expire_at": true
+        },
+        "index": {
+            "EGITS_GOOGLE_PRODUCTS_PRODUCT_STORE_ID_PRODUCT_ID": true,
+            "EGITS_GOOGLE_PRODUCTS_PRODUCT_ID": true,
+            "EGITS_GOOGLE_PRODUCTS_GCONTENT_PRODUCT_ID": true,
+            "EGITS_GOOGLE_PRODUCTS_STATUS": true,
+            "EGITS_GOOGLE_PRODUCTS_UPDATED_DATE": true,
+            "EGITS_GOOGLE_PRODUCTS_LAST_SYNCED": true,
+            "EGITS_GOOGLE_PRODUCTS_EXPIRE_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "EGITS_GOOGLE_PRODUCTS_PRODUCT_STORE_ID_STORE_STORE_ID": true
+        }
+    },
+    "egits_google_attribute_map_type": {
+        "column": {
+            "type_id": true,
+            "name": true,
+            "target_country": true,
+            "store_id": true
+        },
+        "index": {
+            "EGITS_GOOGLE_ATTRIBUTE_MAP_TYPE_TARGET_COUNTRY_STORE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "EGITS_GOOGLE_ATTRIBUTE_MAP_TYPE_STORE_ID_STORE_STORE_ID": true
+        }
+    },
+    "egits_google_attribute_map": {
+        "column": {
+            "entity_id": true,
+            "attr_id": true,
+            "google_attribute": true,
+            "type_id": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "EGITS_GOOGLE_ATTR_MAP_TYPE_ID_EGITS_GOOGLE_ATTR_MAP_TYPE_TYPE_ID": true
+        }
+    },
+    "egits_google_category_mapping": {
+        "column": {
+            "entity_id": true,
+            "category_id": true,
+            "google_category_id": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "egits_google_product_filter": {
+        "column": {
+            "filter_id": true,
+            "store_id": true,
+            "filter_name": true,
+            "conditions": true,
+            "is_active": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "egits_google_api_log": {
+        "column": {
+            "entity_id": true,
+            "store_id": true,
+            "log_level": true,
+            "sync_type": true,
+            "message": true,
+            "date": true
+        },
+        "index": {
+            "EGITS_GOOGLE_API_LOG_STORE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "EGITS_GOOGLE_API_LOG_STORE_ID_STORE_STORE_ID": true
+        }
+    }
+}

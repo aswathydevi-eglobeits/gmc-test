@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~  Eglobe IT Solutions (P)Ltd.
+  ~
+  ~  @category    Egits
+  ~  @package    Egits_GoogleMerchantApi
+  ~  @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~  @author      Eglobe Magento Team <info@eglobeits.com>
+  -->
+
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">google_merchant_category_map_form.category_map_form_data_source</item>
+            <item name="deps" xsi:type="string">google_merchant_category_map_form.category_map_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Category Mapping</item>
+        <item name="layout" xsi:type="array">
+            <item name="type" xsi:type="string">tabs</item>
+        </item>
+        <item name="buttons" xsi:type="array">
+            <item name="back" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\CategoryMapping\BackButton</item>
+            <item name="save" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\SaveButton</item>
+            <item name="save_and_continue" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\SaveAndContinueButton</item>
+        </item>
+    </argument>
+    <dataSource name="category_map_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Egits\GoogleMerchantApi\Ui\DataProvider\CategoryMap\DataProvider</argument>
+            <argument name="name" xsi:type="string">category_map_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="submit_url" xsi:type="url" path="googlemerchant/category/save"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+    <fieldset name="category_map">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Category Mapping</item>
+            </item>
+        </argument>
+        <container name="category_map_form">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="sortOrder" xsi:type="number">10</item>
+                </item>
+            </argument>
+             <htmlContent name="html_content">
+                <block name="category_edit_map" class="Egits\GoogleMerchantApi\Block\Adminhtml\CategoryMap\Edit\Tab\View"/>
+            </htmlContent>
+        </container>
+    </fieldset>
+</form>

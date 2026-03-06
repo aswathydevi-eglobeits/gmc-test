@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="buttons" xsi:type="array">
+            <item name="google_merchant_api_sync_button" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\Product\SyncButton</item>
+        </item>
+    </argument>
+</form>

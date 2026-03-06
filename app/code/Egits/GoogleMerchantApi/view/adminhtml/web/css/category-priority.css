@@ -1,0 +1,56 @@
+.category-priority .priority {
+    display: flex;
+    flex-direction: row;
+}
+.category-priority .priority .toggle {
+    background: #EFEFEE;
+    width: 40px;
+    cursor: pointer;
+    border: 1px solid #eee;
+}
+.category-priority .priority .toggle.open {
+    background: url("../images/icon-minus-40.png") no-repeat center;
+    background-size: 50%;
+}
+.category-priority .priority .toggle.empty {
+    display: none;
+}
+.category-priority .priority .toggle.closed {
+    background: url("../images/add-40.png") no-repeat center;
+    background-size: 50%;
+}
+
+.category-priority .priority .name {
+    width: 20%;
+    background: #f8f8f8;
+    padding: 10px 20px;
+}
+.category-priority .priority .priority {
+    width: 75%;
+    background: #f8f8f8;
+}
+.category-priority .priority .priority .priority-input-field, .category-priority .priority .priority .type-input-field  {
+    width: 100%;
+    padding: 10px 3px;
+    border: 1px solid #eee;
+}
+.magento_category_priority_form .ui-autocomplete {
+    background-color: #fff;
+}
+.magento_category_priority_form .ui-autocomplete li {
+    list-style: none;
+    padding: 5px 10px;
+    border-bottom: 1px solid #EFEFF5;
+}
+
+/* Remove arrows in Chrome, Safari, Edge */
+.disable-spin::-webkit-outer-spin-button,
+.disable-spin::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Remove arrows in Firefox */
+.disable-spin {
+    -moz-appearance: textfield;
+}

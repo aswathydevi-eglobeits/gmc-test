@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  ~
+  ~  Eglobe IT Solutions (P)Ltd.
+  ~
+  ~  @category    Egits
+  ~  @package    Egits_GoogleMerchantApi
+  ~  @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~  @author      Eglobe Magento Team <info@eglobeits.com>
+  -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Egits_GoogleMerchantApi::css/category.css" />
+    </head>
+    <update handle="styles"/>
+    <update handle="editor"/>
+    <body>
+        <referenceContainer name="content">
+            <uiComponent name="google_merchant_category_map_form"/>
+        </referenceContainer>
+    </body>
+</page>

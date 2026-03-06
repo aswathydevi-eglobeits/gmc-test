@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+<!--
+  ~
+  ~  Eglobe IT Solutions (P)Ltd.
+  ~
+  ~  @category    Egits
+  ~  @package    Egits_GoogleMerchantApi
+  ~  @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~  @author      Eglobe Magento Team <info@eglobeits.com>
+  -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Egits\GoogleMerchantApi\Logger\Handler\GoogleDebug">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">googleLogHandler</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="debug" xsi:type="object">Egits\GoogleMerchantApi\Logger\Handler\GoogleDebug</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">egits_google_attribute_map_type</argument>
+            <argument name="eventPrefix" xsi:type="string">egits_googlemerchantapi_attribute</argument>
+            <argument name="eventObject" xsi:type="string">attribute_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">
+                Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType
+            </argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\ResourceModel\Filter\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">egits_google_product_filter</argument>
+            <argument name="eventPrefix" xsi:type="string">egits_googlemerchantapi_filter</argument>
+            <argument name="eventObject" xsi:type="string">filter_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Filter
+            </argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\ResourceModel\Product\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">egits_google_products</argument>
+            <argument name="eventPrefix" xsi:type="string">egits_googlemerchantapi_product</argument>
+            <argument name="eventObject" xsi:type="string">product_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Product</argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\ResourceModel\Logs\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">egits_google_api_log</argument>
+            <argument name="eventPrefix" xsi:type="string">egits_googlemerchantapi_logs</argument>
+            <argument name="eventObject" xsi:type="string">api_log_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Logs</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="google_merchant_filter_grid_data_source" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Filter\Grid\Collection</item>
+                <item name="google_merchant_attribute_grid_data_source" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType\Grid\Collection</item>
+                <item name="google_merchant_product_grid_data_source" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Product\Grid\Collection</item>
+                <item name="google_merchant_logs_grid_data_source" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\Logs\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\Model\Entity\RepositoryFactory">
+        <arguments>
+            <argument name="entities" xsi:type="array">
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeInterface" xsi:type="string">Egits\GoogleMerchantApi\Api\AttributeMapTypeRepositoryInterface</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\EntityManager\MetadataPool">
+        <arguments>
+            <argument name="metadata" xsi:type="array">
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeInterface" xsi:type="array">
+                    <item name="entityTableName" xsi:type="string">egits_google_attribute_map_type</item>
+                    <item name="identifierField" xsi:type="string">type_id</item>
+                </item>
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMappingInterface" xsi:type="array">
+                    <item name="entityTableName" xsi:type="string">egits_google_attribute_map</item>
+                    <item name="identifierField" xsi:type="string">entity_id</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\EntityManager\HydratorPool">
+        <arguments>
+            <argument name="hydrators" xsi:type="array">
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeInterface" xsi:type="string">Magento\Framework\EntityManager\AbstractModelHydrator</item>
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMappingInterface" xsi:type="string">Magento\Framework\EntityManager\AbstractModelHydrator</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\EntityManager\Operation\ExtensionPool">
+        <arguments>
+            <argument name="extensionActions" xsi:type="array">
+                <item name="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeInterface" xsi:type="array">
+                    <item name="read" xsi:type="array">
+                        <item name="mapTypeReader" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType\Relation\ReadHandler</item>
+                    </item>
+                    <item name="create" xsi:type="array">
+                        <item name="mapTypeCreator" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType\Relation\SaveHandler</item>
+                    </item>
+                    <item name="update" xsi:type="array">
+                        <item name="mapTypeUpdater" xsi:type="string">Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType\Relation\SaveHandler</item>
+                    </item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <preference for="Egits\GoogleMerchantApi\Api\AttributeMapTypeRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapTypeRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeSearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapTypeSearchResult"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\AttributeMapTypeInterface" type="Egits\GoogleMerchantApi\Model\AttributeMapType"/>
+
+    <preference for="Egits\GoogleMerchantApi\Api\FilterRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\FilterRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\FilterInterface" type="Egits\GoogleMerchantApi\Model\Filter"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\FilterSearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\FilterSearchResult"/>
+
+    <preference for="Egits\GoogleMerchantApi\Api\ProductsRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\ProductsRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\ProductsInterface" type="Egits\GoogleMerchantApi\Model\Product"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\ProductSearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\ProductSearchResult"/>
+
+    <preference for="Egits\GoogleMerchantApi\Api\LogRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\LogsRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\LogInterface" type="Egits\GoogleMerchantApi\Model\Logs"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\LogSearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\LogsSearchResult"/>
+
+    <preference for="Egits\GoogleMerchantApi\Api\CategoryMappingRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\CategoryMappingRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\CategoryMappingInterface" type="Egits\GoogleMerchantApi\Model\CategoryMapping"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\CategoryMappingSearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\CategoryMappingSearchResult"/>
+
+    <preference for="Egits\GoogleMerchantApi\Api\GetParentIdsByProductInterface" type="Egits\GoogleMerchantApi\Model\GetParentIdsByProduct"/>
+    <preference for="Egits\GoogleMerchantApi\Api\SetParentProductOnChildInterface" type="Egits\GoogleMerchantApi\Model\SetParentProductOnChild"/>
+    <preference for="Egits\GoogleMerchantApi\Api\GoogleDataMigrationInterface" type="Egits\GoogleMerchantApi\Model\GoogleDataMigration"/>
+
+    <type name="Egits\GoogleMerchantApi\Model\Rule">
+        <arguments>
+            <argument name="combineFactory" xsi:type="object">Egits\GoogleMerchantApi\Model\Rule\Condition\CombineFactory</argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\Rule\Condition\CombineFactory">
+        <arguments>
+            <argument name="instanceName" xsi:type="string">\Egits\GoogleMerchantApi\Model\Rule\Condition\Combine</argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Model\Rule\Condition\ProductFactory">
+        <arguments>
+            <argument name="instanceName" xsi:type="string">Egits\GoogleMerchantApi\Model\Rule\Condition\Product</argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="Migrate" xsi:type="object">Egits\GoogleMerchantApi\Console\Command\Migrate</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Egits\GoogleMerchantApi\Console\Command\Migrate">
+        <arguments>
+            <argument name="googleOldData" xsi:type="object">Egits\GoogleMerchantApi\Api\GoogleDataMigrationInterface\Proxy</argument>
+        </arguments>
+    </type>
+
+    <preference for="Egits\GoogleMerchantApi\Api\CategoryPriorityRepositoryInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\CategoryPriorityRepository"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\CategoryPriorityInterface" type="Egits\GoogleMerchantApi\Model\CategoryPriority"/>
+    <preference for="Egits\GoogleMerchantApi\Api\Data\CategoryPrioritySearchResultInterface" type="Egits\GoogleMerchantApi\Model\ResourceModel\CategoryPrioritySearchResult"/>
+</config>

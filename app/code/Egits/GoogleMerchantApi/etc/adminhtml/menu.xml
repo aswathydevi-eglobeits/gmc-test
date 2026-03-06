@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Egits_GoogleMerchantApi::feed" title="Google Merchant" module="Egits_GoogleMerchantApi" parent="Magento_Catalog::catalog" sortOrder="30" resource="Egits_GoogleMerchantApi::feed"/>
+
+        <add id="Egits_GoogleMerchantApi::feed_filter" title="Filters" sortOrder="10" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/filter/" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+        <add id="Egits_GoogleMerchantApi::feed_attribute" title="Attribute Mapping" sortOrder="20" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/attribute/" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+        <add id="Egits_GoogleMerchantApi::feed_category" title="Category Mapping" sortOrder="30" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/category/edit" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+        <add id="Egits_GoogleMerchantApi::feed_products" title="Products" sortOrder="40" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/product/" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+        <add id="Egits_GoogleMerchantApi::feed_logs" title="Api Logs" sortOrder="50" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/logs/" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+        <add id="Egits_GoogleMerchantApi::feed_category_priority" title="Category Priority" sortOrder="60" module="Egits_GoogleMerchantApi" parent="Egits_GoogleMerchantApi::feed" action="googlemerchant/categorypriority/priority" dependsOnModule="Magento_Catalog" resource="Egits_GoogleMerchantApi::feed"/>
+    </menu>
+</config>

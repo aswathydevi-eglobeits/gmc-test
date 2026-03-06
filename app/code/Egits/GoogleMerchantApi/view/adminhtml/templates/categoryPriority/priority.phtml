@@ -1,0 +1,77 @@
+<?php
+/** @var \Egits\GoogleMerchantApi\Block\Adminhtml\CategoryPriority\Edit\Tab\View $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$categoryList =  $block->getCategoriesList();
+$formName =  $block->getFormName();
+?>
+<div class="field" id="attribute-category-priority-container">
+    <div class="control category-priority category-priority">
+        <?php foreach ($categoryList as $category): ?>
+            <?php $priorityData = $block->getCategoryPriorityData($category['id']); ?>
+            <div
+                style="padding:3px 0 3px <?= ($category['level'] * 30) ?>px;
+                <?= ($category['level'] > 0 ? 'display:none;' : '') ?>"
+                class="priority level-<?= $escaper->escapeHtml($category['level']) ?>
+                <?= ($category['level'] > 0 ? 'collapsed' : 'expanded') ?>"
+                data-role="<?= $escaper->escapeHtml($category['parent_id']) ?>-content"
+                data-level="<?= $escaper->escapeHtml($category['level']) ?>"
+                <?php if ($category['level'] > 1): ?>
+                    style="display:none" class="collapse"
+                <?php endif ?>>
+                <?php if ($category['has_child']): ?>
+                    <div class="toggle open" data-category-id="<?= $escaper->escapeHtmlAttr($category['id']) ?>"></div>
+                <?php else: ?>
+                    <div class="toggle empty" data-category-id="<?= $escaper->escapeHtmlAttr($category['id']) ?>"></div>
+                <?php endif ?>
+                <div class="name">
+                    <?= $escaper->escapeHtml($category['name']) ?>
+                    (ID: <?= $escaper->escapeHtml($category['id']) ?>)</div>
+                <div class="priority">
+                    <input
+                        type="hidden"
+                        class="priority-input"
+                        name="categoryId[<?= $escaper->escapeHtmlAttr($category['id']) ?>]"
+                        value="<?= $escaper->escapeHtmlAttr($category['id']) ?>"
+                        data-id-hidden="<?= $escaper->escapeHtmlAttr($category['id']) ?>"
+                        data-form-part="<?= $escaper->escapeHtmlAttr($formName) ?>"
+                        data-parent-hidden="<?= $escaper->escapeHtmlAttr($category['parent_id']) ?>"
+                    >
+                    <input
+                        class="priority-input-field disable-spin"
+                        type="number"
+                        name="priority[<?= $escaper->escapeHtmlAttr($category['id']) ?>]"
+                        value="<?= $escaper->escapeHtmlAttr($priorityData['priority'] ?? '') ?>"
+                        placeholder="Priority"
+                        data-id="<?= $escaper->escapeHtmlAttr($category['id']) ?>"
+                        data-form-part="<?= $escaper->escapeHtmlAttr($formName) ?>"
+                        data-parent="<?= $escaper->escapeHtmlAttr($category['parent_id']) ?>"
+                        min="0"
+                    >
+                    <input
+                        class="type-input-field"
+                        type="text"
+                        name="type[<?= $escaper->escapeHtmlAttr($category['id']) ?>]"
+                        value="<?= $escaper->escapeHtmlAttr($priorityData['type'] ?? '') ?>"
+                        placeholder="Type"
+                        data-id="<?= $escaper->escapeHtmlAttr($category['id']) ?>"
+                        data-form-part="<?= $escaper->escapeHtmlAttr($formName) ?>"
+                    >
+                    <div class="priority-suggestion"></div>
+                </div>
+                <div class="clear"></div>
+            </div>
+        <?php endforeach ?>
+
+    </div>
+</div>
+
+<script>
+    require([
+        'CategoryPriorityToggle'
+    ], function (CategoryPriorityToggle) {
+        'use strict';
+        CategoryPriorityToggle.init({});
+    });
+</script>

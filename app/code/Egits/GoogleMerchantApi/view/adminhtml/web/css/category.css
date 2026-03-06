@@ -1,0 +1,44 @@
+.category-mapping .mapping {
+    display: flex;
+    flex-direction: row;
+}
+.category-mapping .mapping .toggle {
+    background: #EFEFEE;
+    width: 40px;
+    cursor: pointer;
+    border: 1px solid #eee;
+}
+.category-mapping .mapping .toggle.close {
+    background: url("../images/icon-minus-40.png") no-repeat center;
+    background-size: 50%;
+}
+.category-mapping .mapping .toggle.empty {
+   display: none;
+}
+.category-mapping .mapping .toggle.open {
+    background: url("../images/add-40.png") no-repeat center;
+    background-size: 50%;
+}
+
+.category-mapping .mapping .name {
+    width: 20%;
+    background: #f8f8f8;
+    padding: 10px 20px;
+}
+.category-mapping .mapping .map {
+    width: 75%;
+    background: #f8f8f8;
+}
+.category-mapping .mapping .map .mapping-input-field {
+    width: 100%;
+    padding: 10px 3px;
+    border: 1px solid #eee;
+}
+.googlemerchant-category-edit .ui-autocomplete {
+    background-color: #fff;
+}
+.googlemerchant-category-edit .ui-autocomplete li {
+    list-style: none;
+    padding: 5px 10px;
+    border-bottom: 1px solid #EFEFF5;
+}

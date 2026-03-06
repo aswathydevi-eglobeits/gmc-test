@@ -1,0 +1,73 @@
+name: Magento Marketplace Compatibility
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - magento: "~2.4.8.0"
+            php: 8.4
+          - magento: "~2.4.8.0"
+            php: 8.3
+          - magento: "~2.4.7.0"
+            php: 8.3
+          - magento: "~2.4.7.0"
+            php: 8.1
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: mbstring, intl, bcmath, pdo_mysql, soap, xsl, zip
+    - name: Sanitize Magento Version
+      id: sanitize
+      run: |
+        SANITIZED_VERSION="${{ matrix.magento }}" && SANITIZED_VERSION="${SANITIZED_VERSION//\~/}"
+        echo "sanitized_version=$SANITIZED_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Configure Composer Auth
+      run: echo '${{ secrets.ACC_COMPOSER_AUTH }}' > ~/.composer/auth.json
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.composer/cache
+        key: ${{ runner.os }}-php-${{ matrix.php }}-magento-${{ steps.sanitize.outputs.sanitized_version }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-${{ steps.sanitize.outputs.sanitized_version }}-composer-
+
+    - name: Create Adobe Commerce Project
+      run: |
+        composer create-project --repository-url=https://repo.magento.com/ \
+          magento/project-enterprise-edition=${{ matrix.magento }} \
+           magento-${{ steps.sanitize.outputs.sanitized_version }}
+    - name: Copy Custom Extension
+      run: |
+        mkdir -p magento-${{ steps.sanitize.outputs.sanitized_version }}/app/code/Egits/GoogleMerchantApi
+        cp -R Api Block Console Controller Cron Helper Logger Model Observer Setup Ui etc fixtures view composer.json registration.php  magento-${{ steps.sanitize.outputs.sanitized_version }}/app/code/Egits/GoogleMerchantApi/
+
+    - name: Allow PHPCS Composer Plugin
+      run: composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+
+    - name: Magento Coding Standard (PHPCS)
+      run: |
+        composer global require magento/magento-coding-standard
+        ~/.composer/vendor/bin/phpcs \
+          --standard=Magento2 \
+          --extensions=php,phtml \
+          magento-${{ steps.sanitize.outputs.sanitized_version }}/app/code/Egits/GoogleMerchantApi
+
+    # - name: PHPStan Analysis
+    #   run: |
+    #     composer require --dev phpstan/phpstan
+    #     echo "parameters:\n  level: 5\n  paths:\n    - magento-${{ steps.sanitize.outputs.sanitized_version }}/app/code/MyVendor/MyModule" > phpstan.neon
+    #     vendor/bin/phpstan analyse

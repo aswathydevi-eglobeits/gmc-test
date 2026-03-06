@@ -1,0 +1,81 @@
+<?php
+/**
+ *
+ *  Eglobe IT Solutions (P)Ltd.
+ *
+ * @category    Egits
+ * @package    Egits_GoogleMerchantApi
+ * @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+ * @author      Eglobe Magento Team <info@eglobeits.com>
+ */
+?>
+<?php
+/** @var $block \Egits\GoogleMerchantApi\Block\Adminhtml\CategoryMap\Edit\Tab\View
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+
+$categoryList =  $block->getCategoriesList();
+$formName =  $block->getFormName();
+$googleCategoryMapping =  $block->getCategoryMapping();
+$googleCategoryList =  $block->getGoogleCategoryAsArray();
+$categoryMapJsVersion = $block->getJsversion();
+
+?>
+<div class="field" id="attribute-category-map-container">
+    <div class="control category-mapping category-map">
+        <?php foreach ($categoryList as $category): ?>
+            <div style="padding:3px 0 3px <?= ($category['level'] * 30) ?>px;"
+                 class="mapping level-<?= $escaper->escapeHtml($category['level']) ?>"
+                 data-role="<?= $escaper->escapeHtml($category['parent_id']) ?>-content"
+                 data-level="<?= $escaper->escapeHtml($category['level']) ?>"
+                 <?php if ($category['level'] > 1): ?>
+                     style="display:none" class="collapse"
+                    <?php endif ?>>
+                    <?php if ($category['has_child']): ?>
+                        <div class="toggle open"></div>
+                    <?php else: ?>
+                        <div class="toggle empty"></div>
+                    <?php endif ?>
+                    <div class="name">
+                        <?= $escaper->escapeHtml($category['name']) ?>
+                        (ID: <?= $escaper->escapeHtml($category['id']) ?>)</div>
+                    <div class="map">
+                        <input
+                                class="mapping-input"
+                                type="hidden"
+                                name="mapping[<?= $escaper->escapeHtml($category['id']) ?>]"
+                                value="<?= $escaper->escapeHtml($block->getMappingValueForCategory($category['id']));?>"
+                                data-id-hidden="<?= $escaper->escapeHtml($category['id']) ?>"
+                                data-form-part="<?= $escaper->escapeHtml($formName) ?>"
+                                data-parent-hidden="<?= $escaper->escapeHtml($category['parent_id']) ?>">
+                        <?php $googleCategoryLabel = $block->getGoogleCategoryLabelForCategory($category['id']); ?>
+                        <input
+                                class="mapping-input-field"
+                                type="text"
+                                name="mapping-label[<?= $escaper->escapeHtml($category['id']) ?>]"
+                                value="<?= $escaper->escapeHtml($googleCategoryLabel) ?>"
+                                data-form-part="<?= $escaper->escapeHtml($formName) ?>"
+                                data-id="<?= $escaper->escapeHtml($category['id']) ?>"
+                                data-parent="<?= $escaper->escapeHtml($category['parent_id']) ?>"
+                        >
+                        <div class="mapping-suggestion"></div>
+                    </div>
+                    <div class="clear"></div>
+                </div>
+        <?php endforeach ?>
+
+    </div>
+</div>
+
+<script>
+    require([
+        '<?= $escaper->escapeHtml($categoryMapJsVersion) ?>'
+    ], function (CategoryMapGoogle) {
+        'use strict';
+        CategoryMapGoogle.init({
+            'googleCategory' : <?= /* @noEscape */ json_encode($block->getGoogleCategoryLists());?>
+        });
+        CategoryMapGoogle.getGoogleCategories();
+    });
+</script>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~  Eglobe IT Solutions (P)Ltd.
+  ~
+  ~  @category    Egits
+  ~  @package    Egits_GoogleMerchantApi
+  ~  @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~  @author      Eglobe Magento Team <info@eglobeits.com>
+  -->
+
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">google_merchant_filter_form.filter_form_data_source</item>
+            <item name="deps" xsi:type="string">google_merchant_filter_form.filter_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">New Filter Form</item>
+        <item name="layout" xsi:type="array">
+            <item name="type" xsi:type="string">tabs</item>
+            <item name="navContainerName" xsi:type="string">left</item>
+        </item>
+        <item name="buttons" xsi:type="array">
+            <item name="back" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\BackButton</item>
+            <item name="delete" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Edit\DeleteButton</item>
+            <item name="save" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Filter\Buttons\SaveButton</item>
+            <item name="save_and_continue" xsi:type="string">Egits\GoogleMerchantApi\Block\Adminhtml\Filter\Buttons\SaveAndContinueButton</item>
+        </item>
+    </argument>
+    <dataSource name="filter_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Egits\GoogleMerchantApi\Ui\DataProvider\Filter\DataProvider</argument>
+            <argument name="name" xsi:type="string">filter_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">filter_id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="submit_url" xsi:type="url" path="googlemerchant/filter/save"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+    <fieldset name="filter">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Settings</item>
+            </item>
+        </argument>
+        <!-- This field represents form id and is hidden -->
+        <field name="google_merchant_filter_id">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="visible" xsi:type="boolean">false</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">input</item>
+                    <item name="source" xsi:type="string">filter</item>
+                </item>
+            </argument>
+        </field>
+        <field name="filter_name">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string">Filter Name</item>
+                    <item name="visible" xsi:type="boolean">true</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">input</item>
+                    <item name="source" xsi:type="string">filter</item>
+                </item>
+            </argument>
+        </field>
+        <field name="store_id">
+            <argument name="data" xsi:type="array">
+                <item name="options" xsi:type="object">\Magento\Store\Ui\Component\Listing\Column\Store\Options</item>
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string">Store</item>
+                    <item name="visible" xsi:type="boolean">true</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">select</item>
+                    <item name="source" xsi:type="string">filter</item>
+                </item>
+            </argument>
+        </field>
+        <field name="is_active">
+            <argument name="data" xsi:type="array">
+                <item name="options" xsi:type="object">\Egits\GoogleMerchantApi\Ui\Component\Listing\Column\Status\Options</item>
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string">Status</item>
+                    <item name="visible" xsi:type="boolean">true</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">select</item>
+                    <item name="source" xsi:type="string">filter</item>
+                </item>
+            </argument>
+        </field>
+    </fieldset>
+    <fieldset name="conditions">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Conditions</item>
+            </item>
+        </argument>
+        <container name="conditions_apply_to">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="sortOrder" xsi:type="number">10</item>
+                </item>
+            </argument>
+              <htmlContent name="html_content">
+                <block name="filter_edit" class="Egits\GoogleMerchantApi\Block\Adminhtml\Filter\Tabs\Conditions"/>
+              </htmlContent>
+        </container>
+    </fieldset>
+</form>

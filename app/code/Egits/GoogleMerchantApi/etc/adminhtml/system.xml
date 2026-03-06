@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+
+        <tab id="egits_extensions" translate="label" sortOrder="100">
+            <label>Egits Extensions</label>
+        </tab>
+        <section id="egits_google_merchant" translate="label" type="text" sortOrder="161812" showInDefault="1" showInWebsite="1"
+                 showInStore="1">
+            <label>Google Merchant Api</label>
+            <tab>egits_extensions</tab>
+            <resource>Egits_GoogleMerchantApi::general</resource>
+
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="1">
+                <label>General</label>
+                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Google Merchant Integration</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="debug" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Debug</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="remove_disabled" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Remove disabled items</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Remove items which are disabled in Magento while performing synchronisation</comment>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="target_country" translate="label" type="multiselect" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Target Country</label>
+                    <source_model>Egits\GoogleMerchantApi\Ui\Component\Listing\Column\TargetCountry\Options</source_model>
+                    <comment>Select target country for shopping.</comment>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="default_google_category" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Google Category</label>
+                    <source_model>Egits\GoogleMerchantApi\Model\CategoryMap</source_model>
+                    <comment>Use this category if no category mapping added or product not assigned to any category</comment>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="default_content_language" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Language</label>
+                    <source_model>Egits\GoogleMerchantApi\Model\Config\Source\ContentLanguage</source_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="include_store_code_in_url" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include Store Code In Url</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="enable_batch_import" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Batch Sync</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="batch_size" translate="label comment" type="text" sortOrder="10" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Batch Size</label>
+                    <comment>Indicate how many products will be handled during one iteration. Affects the feed generation time and the server memory consumption.default(50)</comment>
+                    <depends>
+                        <field id="*/*/enable_batch_import">1</field>
+                        <field id="*/*/enable">1</field>
+                    </depends>
+                </field>
+            </group>
+            <group id="api_credentials" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="1">
+                <label>Google Merchant Api Credentials</label>
+                <depends><field id="egits_google_merchant/general/enable">1</field></depends>
+                <field id="account_id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Account ID</label>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="merchant_service_account_file" translate="label" type="Magento\Config\Block\System\Config\Form\Field\File" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Google Merchant Service Account file</label>
+                    <backend_model>Egits\GoogleMerchantApi\Model\Config\File</backend_model>
+                    <upload_dir config="system">googlemerchant</upload_dir>
+                    <depends><field id="*/*/enable">1</field></depends>
+                    <comment>(.json Format)</comment>
+                </field>
+                <field id="destination_exclude" translate="label" type="multiselect" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Product Destinations Exclusion</label>
+                    <source_model>Egits\GoogleMerchantApi\Model\Config\Source\Destinations</source_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                    <comment>Select for exclude destination.leave empty if all destination to include</comment>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="sync_products_queue" translate="label comment tooltip" type="button" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Sync Product To Queue</label>
+                    <frontend_class>disabled</frontend_class>
+                    <frontend_model>Egits\GoogleMerchantApi\Block\Adminhtml\System\Config\ProductSyncButton</frontend_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="sync_batch_size" translate="label comment" type="text" sortOrder="25" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Batch Size</label>
+                    <comment>For Adding products to internal queue, in case of large number SKUs. The sync to Google will only start after this internal product sync and time to start the Google Sync depends on the number of SKUs in the system. You can set the batch size depending on the server capacity and web server timeout.</comment>
+                </field>
+                <field id="test_connection" translate="label comment tooltip" type="button" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Test Connection</label>
+                    <frontend_model>Egits\GoogleMerchantApi\Block\Adminhtml\System\Config\TestConnectionButton</frontend_model>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+                <field id="sync_now" translate="label comment tooltip" type="button" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Sync All Product To Google</label>
+                    <frontend_model>Egits\GoogleMerchantApi\Block\Adminhtml\System\Config\SyncNowButton</frontend_model>
+                    <comment>Affects the feed generation time and the server memory consumption</comment>
+                    <depends><field id="*/*/enable">1</field></depends>
+                </field>
+            </group>
+            <group id="pwa" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="1">
+                <label>PWA Url Configuration</label>
+                <depends>
+                    <field id="egits_google_merchant/general/enable">1</field>
+                </depends>
+                <field id="pwa_url_enabled" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>PWA Url enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Running store front on a different pwa url than the one configured in magento configuration? The base urk will be replaced with PWA url configured. Make sure all magento product urls are accessible via PWA url as well</comment>
+                </field>
+                <field id="pwa_url" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>PWA Url</label>
+                    <depends>
+                        <field id="egits_google_merchant/pwa/pwa_url_enabled">1</field>
+                    </depends>
+                    <comment>Fully qualified url with ending slash. This url will replace the base url in the configuration while generating urls for google</comment>
+                </field>
+            </group>
+            <group id="cron_schedules" translate="label" sortOrder="70" showInDefault="1" showInWebsite="1"
+                   showInStore="0">
+                <label>Manage Cron Timings</label>
+                <depends><field id="egits_google_merchant/general/enable">1</field></depends>
+                <field id="enable_cron" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Cron</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="frequency" translate="label" type="select" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Frequency</label>
+                    <source_model>Magento\Cron\Model\Config\Source\Frequency</source_model>
+                    <depends><field id="egits_google_merchant/cron_schedules/enable_cron">1</field></depends>
+                </field>
+                <field id="time" translate="label" type="time" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Start Time</label>
+                    <depends><field id="egits_google_merchant/cron_schedules/enable_cron">1</field></depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

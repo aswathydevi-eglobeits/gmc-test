@@ -1,0 +1,74 @@
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+<?php
+/** @var $block \Egits\GoogleMerchantApi\Block\Adminhtml\System\Config\ProductSyncButton */
+?>
+<script>
+    require([
+        'jquery',
+        'prototype'
+    ], function (jQuery) {
+        function SyncProductsToQueue() {
+            params = {};
+
+            new Ajax.Request('<?= /* @noEscape */ $block->getAjaxUrl() ?>', {
+                loaderArea: false,
+                asynchronous: true,
+                parameters: params,
+                onSuccess: function (transport) {
+                    var response = JSON.parse(transport.responseText);
+                    var messageContainer =  jQuery('#sync-products-button-message');
+                    if (response.error) {
+                        messageContainer.removeClass('message message-error')
+                            .addClass('message message-error').html(response.message);
+                    } else {
+                        messageContainer.removeClass('message message-success')
+                            .addClass('message message-success').html(response.message);
+                        jQuery('#sync_products').addClass('disabled');
+                    }
+
+                }
+            });
+        };
+
+        function CheckSyncProductsToQueueStatus() {
+            params = {};
+
+            new Ajax.Request('<?= /* @noEscape */ $block->getSyncStatusAjaxUrl() ?>', {
+                loaderArea: true,
+                asynchronous: true,
+                parameters: params,
+                onSuccess: function (transport) {
+                    var response = JSON.parse(transport.responseText);
+                    var messageContainer =  jQuery('#sync-products-button-message');
+                    if (response.init) {
+                        messageContainer.removeClass('message message-error')
+                            .addClass('message message-success').html(response.status);
+                        jQuery('#sync_products').addClass('disabled');
+                    } else {
+                        jQuery('#sync_products').removeClass('disabled');
+                    }
+
+                }
+            });
+        };
+
+        jQuery('#sync_products').click(function () {
+            SyncProductsToQueue();
+        });
+        /**
+         * Check the Sync Status.
+         */
+        CheckSyncProductsToQueueStatus();
+    });
+</script>
+
+<?= $block->getButtonHtml() ?>
+<div id="sync-products-button-message"></div>

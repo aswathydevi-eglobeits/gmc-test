@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+  ~ Eglobe IT Solutions (P)Ltd.
+  ~
+  ~ @category    Egits
+  ~ @package    Egits_GoogleMerchantApi
+  ~ @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+  ~ @author      Eglobe Magento Team <info@eglobeits.com>
+  ~
+  -->
+
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="formkey"/>
+    <body>
+        <referenceContainer name="content">
+            <block class="Egits\GoogleMerchantApi\Block\Adminhtml\Product\Template" name="egits_google_merchant_products" template="product/template.phtml">
+                <uiComponent name="google_merchant_product_grid"/>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

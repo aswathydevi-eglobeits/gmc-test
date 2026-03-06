@@ -1,0 +1,266 @@
+pipeline {
+    agent any
+    environment {
+        RUNNING_IN_CI = 'true'
+        REPOSITORY_NAME = "${env.GIT_URL.tokenize('/')[3].split('\\.')[0]}"
+        REPOSITORY_OWNER = "${env.GIT_URL.tokenize('/')[2]}"
+        MAGE_MODULE_NAME = 'eglobe-it-solutions/googlemerchantapi'
+        MAGE_MODULE_VERSION = '1.0.0'
+        MAGE_PACKAGE_NAME = 'egits_googlemerchantapi'
+        M22_DIR = '/var/www/demo-magento-2.2'
+        M23_DIR = '/var/www/demo-magento-2.3'
+    }
+    stages {
+        stage('M2.2 - Violation Checks') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.2-php-7.0'
+                    args '-u 0'
+                }
+            }
+            //DON'T RUN VOILATION CHECKS FOR MASTER
+            when {
+                expression {
+                    return env.BRANCH_NAME != 'master';
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME'
+                sh 'mkdir -p $WORKSPACE/output/phpcs && chmod -R 777 $WORKSPACE/output/'
+                sh 'echo "PHP CS with Magento2 Standards"'
+                sh 'cd /var/www/magento/ && php vendor/bin/phpcs --standard=Magento2 --severity=5 --extensions=php,phtml --report=checkstyle --report-checkstyle=$WORKSPACE/output/phpcs.xml vendor/$MAGE_MODULE_NAME'
+
+                //sh 'echo "PHP Mess Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpmd vendor/$MAGE_MODULE_NAME text unusedcode'
+                //sh 'echo "PHP Copy Paste Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpcpd vendor/$MAGE_MODULE_NAME'
+            }
+
+            post {
+                unsuccessful {
+                    ViolationsToGitHub([
+                        gitHubUrl: env.GIT_URL,
+                        repositoryName: env.REPOSITORY_NAME,
+                        repositoryOwner: env.REPOSITORY_OWNER,
+                        pullRequestId: env.CHANGE_ID,
+                        credentialsId: 'nidheesh',
+                        createCommentWithAllSingleFileComments: false,
+                        createSingleFileComments: true,
+                        keepOldComments: false,
+                        commentOnlyChangedContent: true,
+                        minSeverity: 'INFO',
+                        violationConfigs: [[
+                            reporter: 'PHPCS',
+                            parser: 'CHECKSTYLE',
+                            pattern: '.*/output/.*\\.xml$',
+                        ]]
+                     ])
+                 }
+            }
+        }
+
+        stage('M2.3 - Violation Checks') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.3-php-7.2'
+                    args '-u 0'
+                }
+            }
+            //DON'T RUN VOILATION CHECKS FOR MASTER
+            when {
+                expression {
+                    return env.BRANCH_NAME != 'master';
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME'
+                sh 'mkdir -p $WORKSPACE/output/phpcs && chmod -R 777 $WORKSPACE/output/'
+                sh 'echo "PHP CS with Magento2 Standards"'
+                sh 'cd /var/www/magento/ && php vendor/bin/phpcs --standard=Magento2 --severity=5 --extensions=php,phtml --report=checkstyle --report-checkstyle=$WORKSPACE/output/phpcs.xml vendor/$MAGE_MODULE_NAME'
+
+                //sh 'echo "PHP Mess Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpmd vendor/$MAGE_MODULE_NAME text unusedcode'
+                //sh 'echo "PHP Copy Paste Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpcpd vendor/$MAGE_MODULE_NAME'
+            }
+
+            post {
+                unsuccessful {
+                    ViolationsToGitHub([
+                        gitHubUrl: env.GIT_URL,
+                        repositoryName: env.REPOSITORY_NAME,
+                        repositoryOwner: env.REPOSITORY_OWNER,
+                        pullRequestId: env.CHANGE_ID,
+                        credentialsId: 'nidheesh',
+                        createCommentWithAllSingleFileComments: false,
+                        createSingleFileComments: true,
+                        keepOldComments: false,
+                        commentOnlyChangedContent: true,
+                        minSeverity: 'INFO',
+                        violationConfigs: [[
+                            reporter: 'PHPCS - Magento 2.3 / PHP 7.2',
+                            parser: 'CHECKSTYLE',
+                            pattern: '.*/output/.*\\.xml$',
+                        ]]
+                     ])
+                 }
+            }
+        }
+        stage('M2.3.3 - Violation Checks') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.3.3-php-7.2'
+                    args '-u 0'
+                }
+            }
+            //DON'T RUN VOILATION CHECKS FOR MASTER
+            when {
+                expression {
+                    return env.BRANCH_NAME != 'master';
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME'
+                sh 'mkdir -p $WORKSPACE/output/phpcs && chmod -R 777 $WORKSPACE/output/'
+                sh 'echo "PHP CS with Magento2 Standards"'
+                sh 'cd /var/www/magento/ && php vendor/bin/phpcs --standard=Magento2 --severity=5 --extensions=php,phtml --report=checkstyle --report-checkstyle=$WORKSPACE/output/phpcs.xml vendor/$MAGE_MODULE_NAME'
+
+                //sh 'echo "PHP Mess Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpmd vendor/$MAGE_MODULE_NAME text unusedcode'
+                //sh 'echo "PHP Copy Paste Detector"'
+                //sh 'cd /var/www/magento/ && php vendor/bin/phpcpd vendor/$MAGE_MODULE_NAME'
+            }
+
+            post {
+                unsuccessful {
+                    ViolationsToGitHub([
+                        gitHubUrl: env.GIT_URL,
+                        repositoryName: env.REPOSITORY_NAME,
+                        repositoryOwner: env.REPOSITORY_OWNER,
+                        pullRequestId: env.CHANGE_ID,
+                        credentialsId: 'nidheesh',
+                        createCommentWithAllSingleFileComments: false,
+                        createSingleFileComments: true,
+                        keepOldComments: false,
+                        commentOnlyChangedContent: true,
+                        minSeverity: 'INFO',
+                        violationConfigs: [[
+                            reporter: 'PHPCS - Magento 2.3.3 / PHP 7.2',
+                            parser: 'CHECKSTYLE',
+                            pattern: '.*/output/.*\\.xml$',
+                        ]]
+                     ])
+                 }
+            }
+        }
+
+        stage ('M2.2 - Deploy check') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.2-php-7.0'
+                    args '-u 0'
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME && composer update'
+                sh 'mysqld_safe &'
+                sh 'sleep 10'
+                sh 'mysql -uroot -e "DROP DATABASE IF EXISTS magento"'
+                sh 'mysql -uroot -e "CREATE DATABASE magento"'
+                sh 'chmod -R 775 /var/www/magento/var/  /var/www/magento/generated/ /var/www/magento/pub/static/ /var/www/magento/bin/magento'
+                sh 'echo "Importing database from file"'
+                sh 'cd /var/www/magento/ && mysql -uroot magento < magento.sql'
+                sh 'echo "Deploy production mode"'
+                sh 'cd /var/www/magento/bin/ && php magento deploy:mode:set production -s && php magento setup:di:compile'
+            }
+        }
+
+        stage ('M2.3 - Deploy check') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.3-php-7.2'
+                    args '-u 0'
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME'
+                sh 'mysqld_safe &'
+                sh 'sleep 10'
+                sh 'mysql -uroot -e "DROP DATABASE IF EXISTS magento"'
+                sh 'mysql -uroot -e "CREATE DATABASE magento"'
+                sh 'chmod -R 775 /var/www/magento/var/  /var/www/magento/generated/ /var/www/magento/pub/static/ /var/www/magento/bin/magento'
+                sh 'echo "Importing database from file"'
+                sh 'cd /var/www/magento/ && mysql -uroot magento < magento.sql'
+                sh 'echo "Deploy production mode"'
+                sh 'cd /var/www/magento/bin/ && php magento deploy:mode:set production -s && php magento setup:di:compile'
+            }
+        }
+
+        stage ('M2.3.3 - Deploy check') {
+            agent {
+                docker {
+                    image 'nidheesh/magento-2.3.3-php-7.2'
+                    args '-u 0'
+                }
+            }
+            steps {
+                sh 'mkdir /var/www/package && rm -rf /var/www/package/*'
+                sh 'cp -rf $WORKSPACE/* /var/www/package'
+                sh 'cd /var/www/magento/ && composer require $MAGE_MODULE_NAME'
+                sh 'mysqld_safe &'
+                sh 'sleep 10'
+                sh 'mysql -uroot -e "DROP DATABASE IF EXISTS magento"'
+                sh 'mysql -uroot -e "CREATE DATABASE magento"'
+                sh 'chmod -R 775 /var/www/magento/var/  /var/www/magento/generated/ /var/www/magento/pub/static/ /var/www/magento/bin/magento'
+                sh 'echo "Importing database from file"'
+                sh 'cd /var/www/magento/ && mysql -uroot magento < magento.sql'
+                sh 'echo "Deploy production mode"'
+                sh 'cd /var/www/magento/bin/ && php magento deploy:mode:set production -s && php magento setup:di:compile'
+            }
+        }
+
+        stage ('Build') {
+            steps {
+                sh 'cd $WORKSPACE && zip -r $MAGE_PACKAGE_NAME-$MAGE_MODULE_VERSION.zip . -x ".git/*" -x "Jenkinsfile"'
+                archiveArtifacts artifacts: '*.zip', fingerprint: true
+                sh 'rm -rf $WORKSPACE/$MAGE_PACKAGE_NAME-$MAGE_MODULE_VERSION.zip'
+            }
+        }
+
+        stage ('Stage deploy M2.2') {
+             when{
+                 branch 'master'
+             }
+             steps {
+                 sh 'mkdir -p /var/www/modules/$MAGE_MODULE_NAME/'
+                 sh 'cp -r $WORKSPACE/* /var/www/modules/$MAGE_MODULE_NAME/'
+                 sh 'cd $M22_DIR && php7.0 /usr/bin/composer config repositories.$MAGE_PACKAGE_NAME \'{"type":"path","url": \"/var/www/modules/' + MAGE_MODULE_NAME + '/\", "options": {"symlink": false}}\''
+                 sh 'cd $M22_DIR && php7.0 /usr/bin/composer require $MAGE_MODULE_NAME'
+                 sh 'cd $M22_DIR/bin/ && php7.0 magento setup:upgrade && php7.0 magento setup:di:compile && php7.0 magento setup:static-content:deploy  && php7.0 magento cache:flush'
+             }
+        }
+
+        stage ('Stage deploy M2.3') {
+            when{
+                branch 'master'
+            }
+            steps {
+                sh 'mkdir -p /var/www/modules/$MAGE_MODULE_NAME/'
+                sh 'cp -r $WORKSPACE/* /var/www/modules/$MAGE_MODULE_NAME/'
+                sh 'cd $M23_DIR && composer config repositories.$MAGE_PACKAGE_NAME \'{"type":"path","url": \"/var/www/modules/' + MAGE_MODULE_NAME + '/\", "options": {"symlink": false}}\''
+                sh 'cd $M23_DIR && composer require $MAGE_MODULE_NAME'
+                sh 'cd $M23_DIR/bin/ && php7.2 magento setup:upgrade && php7.2 magento setup:di:compile && php7.2 magento setup:static-content:deploy  && php7.2 magento cache:flush'
+            }
+        }
+    }
+}
