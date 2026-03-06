@@ -20,6 +20,9 @@
     },
     "version": "2.4.8-p3",
     "require": {
+        "google/apiclient": "^2.15",
+        "google/shopping-merchant-accounts": "^1.3",
+        "google/shopping-merchant-products": "^1.3",
         "magento/composer-dependency-version-audit-plugin": "~0.1",
         "magento/composer-root-update-plugin": "^2.0.4",
         "magento/module-bundle-sample-data": "100.4.*",
@@ -94,16 +97,9 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "repositories": {
-        "0": {
+        "magento": {
             "type": "composer",
             "url": "https://repo.magento.com/"
-        },
-        "egits_googlemerchantapi": {
-            "type": "path",
-            "url": "/home/aswathy/Documents/Projects/magento-gmc-docker/gmc-merchant-api-local-test/src",
-            "options": {
-                "symlink": false
-            }
         }
     },
     "extra": {
