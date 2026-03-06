@@ -10,6 +10,7 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 
@@ -29,8 +30,8 @@ class Destinations extends Base
     /**
      * @inheritdoc
      * @param ProductInterface|Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param ProductInput $shoppingProduct
+     * @return ProductInput
      */
     public function convertAttribute($product, $shoppingProduct)
     {

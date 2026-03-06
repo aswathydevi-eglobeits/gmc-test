@@ -17,6 +17,7 @@ use Egits\GoogleMerchantApi\Model\GoogleShopping;
 use Egits\GoogleMerchantApi\Model\Product as ProductModel;
 use Egits\GoogleMerchantApi\Model\Product as ProductQueueModel;
 use Exception;
+use Google\ApiCore\ApiException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Registry;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
@@ -111,7 +112,7 @@ class Product
                 if ($googleProduct && $googleProduct->getId()) {
                     $this->googleShopping->deleteProduct($googleProductId, $product->getProductStoreId());
                 }
-            } catch (\Google_Service_Exception $exception) {
+            } catch (ApiException $exception) {                       // ✅ CHANGED
                 if ($exception->getCode() == 404) {
                     $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
                         'Product not found for: ' . $googleProductId
@@ -270,7 +271,7 @@ class Product
      * Update product status
      *
      * @param ProductsInterface|ProductModel $product
-     * @param null|\Google_Service_ShoppingContent_Product $shoppingProduct
+     * @param null|\Google\Shopping\Merchant\Products\V1\Product $shoppingProduct  // ✅ CHANGED
      * @return $this
      */
     protected function updateProductStatus($product, $shoppingProduct = null)

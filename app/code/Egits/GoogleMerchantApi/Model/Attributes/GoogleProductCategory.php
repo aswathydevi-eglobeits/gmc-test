@@ -14,6 +14,7 @@ use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Egits\GoogleMerchantApi\Model\CategoryMapping;
 use Egits\GoogleMerchantApi\Model\ResourceModel\CategoryMapping\CollectionFactory;
 use Egits\GoogleMerchantApi\Model\ResourceModel\CategoryMapping\Collection;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Model\ProductRepository;
 
 /**
@@ -47,8 +48,8 @@ class GoogleProductCategory extends Base
     /**
      * @inheritdoc
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param ProductInput $shoppingProduct
+     * @return ProductInput
      */
     public function convertAttribute($product, $shoppingProduct)
     {

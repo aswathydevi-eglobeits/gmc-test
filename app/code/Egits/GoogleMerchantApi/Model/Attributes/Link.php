@@ -10,12 +10,12 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
-use Google_Service_ShoppingContent_Product;
 use Magento\Catalog\Api\Data\ProductInterface;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\Exception\LocalizedException;
-
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
 /**
  * Class Link
  * Google merchant api product url attribute
@@ -26,8 +26,8 @@ class Link extends Base
      * Convert Attribute
      *
      * @param ProductInterface|Product $product
-     * @param Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return Google_Service_ShoppingContent_Product
+     * @param ProductInput $shoppingProduct
+     * @return ProductInput
      * @throws LocalizedException
      */
     public function convertAttribute($product, $shoppingProduct)
@@ -65,7 +65,9 @@ class Link extends Base
                 $url .= 'utm_source=GoogleShopping';
             }
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
-            $shoppingProduct->setLink($url);
+            $attributes = new ProductAttributes();
+            $attributes->setLink($url);
+            $shoppingProduct->setProductAttributes($attributes); // ✅ correct method name
         }
 
         return $shoppingProduct;

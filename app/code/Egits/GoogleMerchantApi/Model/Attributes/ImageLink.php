@@ -12,6 +12,8 @@ namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Egits\GoogleMerchantApi\Helper\Data;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Block\Product\ListProduct;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Framework\App\Area;
@@ -65,8 +67,8 @@ class ImageLink extends Base
     /**
      * @inheritdoc
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param ProductInput  $shoppingProduct
+     * @return ProductInput
      */
     public function convertAttribute($product, $shoppingProduct)
     {
@@ -87,7 +89,9 @@ class ImageLink extends Base
 
         if ($url && $url != "no_selection") {
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
-            $shoppingProduct->setImageLink($url);
+            $attributes = new ProductAttributes();
+            $attributes->setImageLink($url);
+            $shoppingProduct->setProductAttributes($attributes);
         }
 
         $additionalImages = [];
@@ -101,7 +105,9 @@ class ImageLink extends Base
             foreach ($additionalImages as &$additionalImageUrl) {
                 $additionalImageUrl = $this->getPwaUrl($product->getStore()->getBaseUrl(), $additionalImageUrl);
             }
-            $shoppingProduct->setAdditionalImageLinks($additionalImages);
+            $attributes = $shoppingProduct->getProductAttributes() ?? new ProductAttributes();
+            $attributes->setAdditionalImageLinks($additionalImages);
+            $shoppingProduct->setProductAttributes($attributes);
         }
 
         return $shoppingProduct;

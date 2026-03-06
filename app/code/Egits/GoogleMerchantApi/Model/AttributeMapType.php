@@ -19,6 +19,7 @@ use Egits\GoogleMerchantApi\Model\Config\Source\AgeGroup;
 use Egits\GoogleMerchantApi\Model\Config\Source\Gender;
 use Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapping\Collection;
 use Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType as AttributeMapResourceModel;
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\App\ObjectManager;
@@ -29,6 +30,7 @@ use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Registry;
 use \Magento\Framework\Model\Context;
 use Egits\GoogleMerchantApi\Api\SetParentProductOnChildInterface;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 
 /**
  * Class AttributeMapType
@@ -237,14 +239,14 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      * Convert attribute to model class object
      *
      * @param ProductsInterface $product
-     * @return \Google_Service_ShoppingContent_Product
+     * @return ProductInput
      * @throws LocalizedException
      */
     public function convertAttributes($product)
     {
         $productObject = $product->getProduct();
         $productObject->setData('current_target_country', $this->getTargetCountry());
-        $newShoppingProduct = new \Google_Service_ShoppingContent_Product();
+        $newShoppingProduct = new ProductInput();
         $map = $this->getAttributesMapByProduct($productObject);
         $base = $this->getBaseAttributes();
         /** @var AttributeInterface[] $attributes */
@@ -260,7 +262,8 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
 
         foreach ($attributes as $attribute) {
             try {
-                $attribute->convertAttribute($productObject, $newShoppingProduct);
+                $googleAttributes = new ProductAttributes();
+                $attribute->convertAttribute($productObject, $newShoppingProduct, $googleAttributes);
             } catch (LocalizedException $exception) {
                 $product->setStatus(ProductsInterface::ERROR_STATUS);
                 throw $exception;
@@ -281,7 +284,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      * for some google category 166 need age and gender values
      * if those value not set then set default
      *
-     * @param \Google_Service_ShoppingContent_Product $newShoppingProduct
+     * @param ProductInput $newShoppingProduct
      */
     protected function checkForValidProduct($newShoppingProduct)
     {
@@ -297,7 +300,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
     /**
      * Check for identifier exist if no then set it no
      *
-     * @param \Google_Service_ShoppingContent_Product $newShoppingProduct
+     * @param ProductInput $newShoppingProduct
      */
     protected function checkForIdentifierExist($newShoppingProduct)
     {

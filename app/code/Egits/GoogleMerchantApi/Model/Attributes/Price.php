@@ -11,6 +11,8 @@
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
+use Google\Shopping\Type\Price as GooglePrice;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Tax\Helper\Data as TaxData;
 use Magento\Tax\Model\Config;
@@ -99,17 +101,17 @@ class Price extends Base
             }
         }
 
-        $shoppingPrice = new \Google_Service_ShoppingContent_Price();
-        $shoppingPrice->setCurrency($store->getBaseCurrencyCode());
+        $attributes = new ProductAttributes();
+        $shoppingPrice =new GooglePrice();
+        $shoppingPrice->setCurrencyCode($store->getBaseCurrencyCode());
         if ($isSalePriceAllowed) {
             // set sale_price and effective dates for it
             if ($price && ($price - $finalPrice) > .0001) {
-                $salesPrice = new \Google_Service_ShoppingContent_Price();
-                $salesPrice->setCurrency($store->getBaseCurrencyCode());
-                $shoppingPrice->setValue(sprintf('%.2f', $price));
-                $salesPrice->setValue($finalPrice);
-                $shoppingProduct->setSalePrice($salesPrice);
-
+                $salesPrice = new GooglePrice();
+                $salesPrice->setCurrencyCode($store->getBaseCurrencyCode());
+                $shoppingPrice->setAmountMicros(sprintf('%.2f', $price));
+                $salesPrice->setAmountMicros($finalPrice);
+                $attributes->setSalePrice($salesPrice);
                 $effectiveDate = $this->getGroupAttributeSalePriceEffectiveDate();
                 if ($effectiveDate) {
                     $effectiveDate->setGroupAttributeSalePriceEffectiveDateFrom(
@@ -119,7 +121,7 @@ class Price extends Base
                     )->convertAttribute($product, $shoppingProduct);
                 }
             } else {
-                $shoppingPrice->setValue(sprintf('%.2f', $finalPrice));
+                $shoppingPrice->setAmountMicros(sprintf('%.2f', $finalPrice));
             }
 
             // calculate taxes
@@ -128,10 +130,11 @@ class Price extends Base
                 $tax->convertAttribute($product, $shoppingProduct);
             }
         } else {
-            $shoppingPrice->setValue(sprintf('%.2f', $price));
+            $shoppingPrice->setAmountMicros(sprintf('%.2f', $price));
         }
 
-        $shoppingProduct->setPrice($shoppingPrice);
+        $attributes->setPrice($shoppingPrice);
+        $shoppingProduct->setProductAttributes($attributes);
 
         return $shoppingProduct;
     }

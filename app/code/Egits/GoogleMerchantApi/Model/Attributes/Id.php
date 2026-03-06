@@ -10,6 +10,7 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
@@ -22,8 +23,8 @@ class Id extends Base
      * @inheritdoc
      *
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param ProductInput $shoppingProduct
+     * @return ProductInput
      * @throws LocalizedException
      */
     public function convertAttribute($product, $shoppingProduct)

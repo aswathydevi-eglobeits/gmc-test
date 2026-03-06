@@ -18,7 +18,8 @@ use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Egits\GoogleMerchantApi\Logger\Logger;
 use Egits\GoogleMerchantApi\Model\ResourceModel\ProductsRepository;
 use Exception;
-use Google_Service_ShoppingContent_ProductsCustomBatchResponse;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
+use Google\ApiCore\ApiException;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\Api\FilterBuilder;
 use Magento\Framework\Api\Search\FilterGroupBuilder;
@@ -524,7 +525,7 @@ class Synchronizer
      *
      * Update expiration dates or collect errors.
      *
-     * @param Google_Service_ShoppingContent_ProductsCustomBatchResponse $response
+     * @param ProductInput $response
      */
     protected function processBatchDeleteResponse($response)
     {
@@ -537,7 +538,7 @@ class Synchronizer
                 if (!isset($resEntries[$item->getId()])
                     || !is_a(
                         $resEntries[$item->getId()],
-                        'Google_Service_ShoppingContent_ProductsCustomBatchResponseEntry'
+                        ProductInput::class
                     )
                 ) {
                     $this->errors[] = $item->getId() . " - missing response";
@@ -568,7 +569,7 @@ class Synchronizer
      *
      * Update expiration dates or collect errors.
      *
-     * @param Google_Service_ShoppingContent_ProductsCustomBatchResponse $response
+     * @param ProductInput $response
      */
     protected function processBatchInsertResponse($response)
     {
@@ -582,7 +583,7 @@ class Synchronizer
                 if (!isset($resEntries[$item->getId()])
                     || !is_a(
                         $resEntries[$item->getId()],
-                        'Google_Service_ShoppingContent_ProductsCustomBatchResponseEntry'
+                        ProductInput::class
                     )
                 ) {
                     $this->errors[] = $item->getId() . " - missing response" . "\n";
@@ -1028,25 +1029,25 @@ class Synchronizer
         if ($this->totalDeleted > 0 && isset($this->itemsSkipped[$this->storeId])) {
             $message[] = sprintf(__('Total of %s product(s) have been deleted'), $this->totalDeleted);
             $message[] = sprintf(
-                __('Products deleted are: %s'),
-                implode(", ", array_values($this->itemsDeleted[$this->storeId]))
-            ) . "</br>";
+                    __('Products deleted are: %s'),
+                    implode(", ", array_values($this->itemsDeleted[$this->storeId]))
+                ) . "</br>";
         }
 
         if ($this->totalSkipped > 0 && isset($this->itemsSkipped[$this->storeId])) {
             $message[] = sprintf(__('Total of %s product(s) have been skipped'), $this->totalSkipped);
             $message[] = sprintf(
-                __('Products skipped are: %s'),
-                implode(", ", array_values($this->itemsSkipped[$this->storeId]))
-            ) . "</br>";
+                    __('Products skipped are: %s'),
+                    implode(", ", array_values($this->itemsSkipped[$this->storeId]))
+                ) . "</br>";
         }
 
         if ($this->totalUpdated > 0 && isset($this->itemsSkipped[$this->storeId])) {
             $message[] = sprintf(__('Total of %s product(s) have been updated'), $this->totalUpdated);
             $message[] = sprintf(
-                __('Products updated are: %s'),
-                implode(", ", array_values($this->itemsUpdated[$this->storeId]))
-            ) . "</br>";
+                    __('Products updated are: %s'),
+                    implode(", ", array_values($this->itemsUpdated[$this->storeId]))
+                ) . "</br>";
         }
 
         $this->getLogger()->addSuccess(
@@ -1153,7 +1154,7 @@ class Synchronizer
                     $this->batchDeleteProducts[$item->getProductStoreId()][$item->getId() . $batchIdSuffix]
                         = $googleProductId;
                 }
-            } catch (\Google_Service_Exception $exception) {
+            } catch (ApiException $exception) {
                 if ($exception->getCode() == 404) {
                     $this->googleHelper->writeDebugLogFile(
                         'Product not found for: ' . $googleProductId

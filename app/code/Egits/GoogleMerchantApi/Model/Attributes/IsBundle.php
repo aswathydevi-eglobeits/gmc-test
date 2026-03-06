@@ -10,6 +10,7 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 /**
  * Class IsBundle
  * Google merchant api is bundle attribute
@@ -20,8 +21,8 @@ class IsBundle extends Base
     /**
      * @inheritdoc
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param ProductInput $shoppingProduct
+     * @return ProductInput
      */
     public function convertAttribute($product, $shoppingProduct)
     {

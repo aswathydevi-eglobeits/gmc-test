@@ -10,6 +10,9 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Google\Shopping\Merchant\Products\V1\UnitPricingBaseMeasure;
+use Google\Shopping\Merchant\Products\V1\UnitPricingMeasure;
+
 /**
  * Class ProductUom
  * Google merchant api product unit of measurement attribute
@@ -20,7 +23,7 @@ class ProductUom extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $availableUnits = [
             'mg',
@@ -49,10 +52,10 @@ class ProductUom extends Base
         }
 
         if (!empty($basePriceAmount) && !empty($basePriceReferenceAmount)) {
-            $unitPricingMeasure = new \Google_Service_ShoppingContent_ProductUnitPricingMeasure();
+            $unitPricingMeasure = new UnitPricingMeasure();
             $unitPricingMeasure->setUnit($basePriceUnit);
             $unitPricingMeasure->setValue($basePriceAmount);
-            $unitPricingBaseMeasure = new \Google_Service_ShoppingContent_ProductUnitPricingBaseMeasure();
+            $unitPricingBaseMeasure = new UnitPricingBaseMeasure();
             $unitPricingBaseMeasure->setUnit($basePriceReferenceUnit);
             $unitPricingBaseMeasure->setValue($basePriceReferenceAmount);
             $shoppingProduct->setUnitPricingMeasure($unitPricingMeasure);

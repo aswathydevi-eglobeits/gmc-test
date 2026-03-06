@@ -20,8 +20,8 @@ interface AttributeInterface
      * Convert Mapped Attribute and default attributes.
      *
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param \Google_Service_ShoppingContent_Product $shoppingProduct
-     * @return \Google_Service_ShoppingContent_Product
+     * @param \Google\Shopping\Merchant\Products\V1\ProductInput $shoppingProduct
+     * @return \Google\Shopping\Merchant\Products\V1\ProductInput
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function convertAttribute($product, $shoppingProduct);
