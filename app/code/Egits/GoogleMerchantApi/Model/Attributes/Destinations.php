@@ -11,6 +11,7 @@
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Google\Shopping\Merchant\Products\V1\ProductInput;
+use Google\Shopping\Type\Destination\DestinationEnum;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 
@@ -25,7 +26,11 @@ class Destinations extends Base
      *
      * @var array $supportedValues
      */
-    protected array $supportedValues = [0 => 'Shopping Ads', 1 => 'Display Ads', 2 => 'Shopping Actions'];
+    protected array $supportedValues = [
+        0 => DestinationEnum::SHOPPING_ADS,        // 1
+        1 => DestinationEnum::DISPLAY_ADS,          // 2
+        2 => DestinationEnum::FREE_LISTINGS,        // 4
+    ];
 
     /**
      * @inheritdoc
@@ -33,7 +38,7 @@ class Destinations extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
         $selectedOptions = $this->googleHelper->getConfig()->getDestinationExclude($product->getStoreId());
         $destinationExcludes = [];
@@ -54,8 +59,10 @@ class Destinations extends Base
             $destinationExclude[] = $this->supportedValues[$exclude];
         }
 
-        $shoppingProduct->setIncludedDestinations($destinationInclude);
-        $shoppingProduct->setExcludedDestinations($destinationExclude);
+        $googleAttributes->setIncludedDestinations($destinationInclude);
+        $googleAttributes->setExcludedDestinations($destinationExclude);
+        $shoppingProduct->setProductAttributes($googleAttributes);
+
         return $shoppingProduct;
     }
 }

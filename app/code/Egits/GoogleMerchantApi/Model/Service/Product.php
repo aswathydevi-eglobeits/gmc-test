@@ -24,11 +24,10 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 /**
  * Class Product
- * Google product service class , interact with google api
+ * Google product service class, interact with google api
  */
 class Product
 {
-
     /**
      * @var int
      */
@@ -52,15 +51,15 @@ class Product
     /**
      * Product constructor.
      *
-     * @param GoogleShopping $googleShopping
+     * @param GoogleShopping    $googleShopping
      * @param TimezoneInterface $timezone
-     * @param Registry $registry
+     * @param Registry          $registry
      */
     public function __construct(GoogleShopping $googleShopping, TimezoneInterface $timezone, Registry $registry)
     {
         $this->googleShopping = $googleShopping;
-        $this->timezone = $timezone;
-        $this->registry = $registry;
+        $this->timezone       = $timezone;
+        $this->registry       = $registry;
     }
 
     /**
@@ -94,29 +93,55 @@ class Product
      */
     protected function deleteProductFromAllTargetCountries($product)
     {
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()->getConfig()->getEnabledTargetCountry(
-            $product->getProductStoreId()
-        );
-        $googleProductId = $product->getGoogleContentId();
-        foreach ($enabledTargetCountryList as $enabledCountry) {
-            try {
-                preg_match('([a-z]{2}:([A-Z]{2,6}))', $googleProductId, $matches);
-                if ($matches) {
-                    $languageCountry = explode(':', $matches[0]);
-                    $language = $languageCountry[0];
-                    $replacement = $language . ':' . $enabledCountry;
-                    $googleProductId = preg_replace('/([a-z]{2}):([A-Z]{2,6})/', $replacement, $googleProductId);
-                }
+        $storeId = $product->getProductStoreId();
 
-                $googleProduct = $this->googleShopping->getProduct($googleProductId, $product->getProductStoreId());
-                if ($googleProduct && $googleProduct->getId()) {
-                    $this->googleShopping->deleteProduct($googleProductId, $product->getProductStoreId());
-                }
-            } catch (ApiException $exception) {                       // ✅ CHANGED
-                if ($exception->getCode() == 404) {
+        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()
+            ->getConfig()->getEnabledTargetCountry($storeId);
+
+        $originalGoogleContentId = $product->getGoogleContentId();
+
+        $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
+            'deleteProductFromAllTargetCountries — originalId: ' . $originalGoogleContentId
+            . ' — countries: ' . implode(',', (array)$enabledTargetCountryList)
+        );
+        if (empty($enabledTargetCountryList)) {
+            $this->googleShopping->deleteProduct($originalGoogleContentId, $storeId);
+        } else {
+            foreach ($enabledTargetCountryList as $enabledCountry) {
+                try {
+                    $googleContentId = $originalGoogleContentId;
+                    if (strpos($googleContentId, '~') !== false) {
+                        $googleContentId = preg_replace(
+                            '/~([A-Z]{2,6})~/',
+                            '~' . $enabledCountry . '~',
+                            $googleContentId
+                        );
+                    } else {
+                        preg_match('/([a-z]{2}):([A-Z]{2,6})/', $googleContentId, $matches);
+                        if ($matches) {
+                            $language        = $matches[1];
+                            $googleContentId = preg_replace(
+                                '/([a-z]{2}):([A-Z]{2,6})/',
+                                $language . ':' . $enabledCountry,
+                                $googleContentId
+                            );
+                        }
+                    }
+
                     $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
-                        'Product not found for: ' . $googleProductId
+                        'Deleting country ' . $enabledCountry . ': ' . $googleContentId
                     );
+                    $this->googleShopping->deleteProduct($googleContentId, $storeId);
+
+                } catch (ApiException $exception) {
+                    if ($exception->getCode() == 404) {
+                        $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
+                            'Product not found (404) for country ' . $enabledCountry . ': ' . $googleContentId
+                        );
+                    } else {
+                        $this->googleShopping->getGoogleHelper()->writeDebugLogFile($exception);
+                    }
+                } catch (Exception $exception) {
                     $this->googleShopping->getGoogleHelper()->writeDebugLogFile($exception);
                 }
             }
@@ -127,7 +152,7 @@ class Product
     }
 
     /**
-     *  Update Item data in Google Content
+     * Update Item data in Google Content
      *
      * @param ProductsInterface|ProductModel $product
      * @return $this
@@ -136,10 +161,9 @@ class Product
      */
     public function update($product)
     {
+        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()
+            ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
 
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()->getConfig()->getEnabledTargetCountry(
-            $product->getProductStoreId()
-        );
         if (empty($enabledTargetCountryList)) {
             throw new LocalizedException(
                 __(
@@ -223,14 +247,13 @@ class Product
             $attributeTypes = $registry[$product->getProductStoreId()];
             array_shift($attributeTypes);
             if (count($attributeTypes) > 0) {
-                foreach ($attributeTypes as $targetCountry => $attributeMap) {
-                    /** @var AttributeMapType $attributeMap */
-                    if ($targetCountry !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($targetCountry, $updatedCountry)
+                foreach ($attributeTypes as $country => $attributeMap) {
+                    if ($country !== $currentAttributeMapType->getTargetCountry()
+                        && !in_array($country, $updatedCountry)
                     ) {
                         $item = $attributeMap->convertAttributes($product);
                         $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                        $updatedCountry[] = $targetCountry;
+                        $updatedCountry[] = $country;
                     }
                 }
 
@@ -277,16 +300,15 @@ class Product
     protected function updateProductStatus($product, $shoppingProduct = null)
     {
         if ($shoppingProduct) {
-            $expires = $shoppingProduct->getExpirationDate();
-            if ($expires) {
-                $expires = $this->timezone->date()->modify('+ 30 days')->format('Y-m-d H:i:s');
-            } else {
-                $expires = $this->timezone->date()->modify('+ 30 days')->format('Y-m-d H:i:s');
-            }
+            $googleContentId = $shoppingProduct->getName();
+            $expires = $this->timezone->date()->modify('+30 days')->format('Y-m-d H:i:s');
 
-            $product->setGoogleContentId($shoppingProduct->getId())
-                ->setLastUpdatedToGoogle($this->googleShopping->getGoogleHelper()->getCurrentDateAndTime())
-                ->setStatus(ProductsInterface::UPDATED_STATUS)->setExpiryDate($expires);
+            $product->setGoogleContentId($googleContentId)
+                ->setLastUpdatedToGoogle(
+                    $this->googleShopping->getGoogleHelper()->getCurrentDateAndTime()
+                )
+                ->setStatus(ProductsInterface::UPDATED_STATUS)
+                ->setExpiryDate($expires);
         }
 
         return $this;

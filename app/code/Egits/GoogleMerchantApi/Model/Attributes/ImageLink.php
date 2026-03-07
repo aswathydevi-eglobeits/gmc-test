@@ -10,7 +10,6 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
-use Egits\GoogleMerchantApi\Helper\Data;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Google\Shopping\Merchant\Products\V1\ProductAttributes;
 use Google\Shopping\Merchant\Products\V1\ProductInput;
@@ -67,10 +66,11 @@ class ImageLink extends Base
     /**
      * @inheritdoc
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param ProductInput  $shoppingProduct
+     * @param ProductInput      $shoppingProduct
+     * @param ProductAttributes $googleAttributes
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
         $productImageItems = $product->getMediaGalleryImages()->getItems();
         if (empty($productImageItems)) {
@@ -89,11 +89,10 @@ class ImageLink extends Base
 
         if ($url && $url != "no_selection") {
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
-            $attributes = new ProductAttributes();
-            $attributes->setImageLink($url);
-            $shoppingProduct->setProductAttributes($attributes);
+            $googleAttributes->setImageLink($url);
         }
 
+        // Additional images
         $additionalImages = [];
         foreach ($productImageItems as $item) {
             if (count($additionalImages) < 10) {
@@ -103,11 +102,12 @@ class ImageLink extends Base
 
         if (count($additionalImages) > 0) {
             foreach ($additionalImages as &$additionalImageUrl) {
-                $additionalImageUrl = $this->getPwaUrl($product->getStore()->getBaseUrl(), $additionalImageUrl);
+                $additionalImageUrl = $this->getPwaUrl(
+                    $product->getStore()->getBaseUrl(),
+                    $additionalImageUrl
+                );
             }
-            $attributes = $shoppingProduct->getProductAttributes() ?? new ProductAttributes();
-            $attributes->setAdditionalImageLinks($additionalImages);
-            $shoppingProduct->setProductAttributes($attributes);
+            $googleAttributes->setAdditionalImageLinks($additionalImages);
         }
 
         return $shoppingProduct;
@@ -126,9 +126,9 @@ class ImageLink extends Base
 
         $this->appEmulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
 
-        $imageBlock = $this->blockFactory->createBlock(ListProduct::class);
+        $imageBlock   = $this->blockFactory->createBlock(ListProduct::class);
         $productImage = $imageBlock->getImage($product, $imageType);
-        $imageUrl = $productImage->getImageUrl();
+        $imageUrl     = $productImage->getImageUrl();
 
         $this->appEmulation->stopEnvironmentEmulation();
 

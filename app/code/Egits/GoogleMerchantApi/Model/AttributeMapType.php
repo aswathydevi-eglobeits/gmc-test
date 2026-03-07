@@ -20,6 +20,8 @@ use Egits\GoogleMerchantApi\Model\Config\Source\Gender;
 use Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapping\Collection;
 use Egits\GoogleMerchantApi\Model\ResourceModel\AttributeMapType as AttributeMapResourceModel;
 use Google\Shopping\Merchant\Products\V1\ProductAttributes;
+use Google\Shopping\Merchant\Products\V1\AgeGroup as MerchantAgeGroup;
+use Google\Shopping\Merchant\Products\V1\Gender as MerchantGender;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\App\ObjectManager;
@@ -42,6 +44,28 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      * Entity type field for attribute map type
      */
     public const ENTITY_TYPE = 'attribute';
+
+    /**
+     * Map Magento AgeGroup string values to Merchant API v1 enum integers
+     */
+    private const AGE_GROUP_MAP = [
+        'adult'   => MerchantAgeGroup::ADULT,
+        'kids'    => MerchantAgeGroup::KIDS,
+        'toddler' => MerchantAgeGroup::TODDLER,
+        'infant'  => MerchantAgeGroup::INFANT,
+        'newborn' => MerchantAgeGroup::NEWBORN,
+        ''        => MerchantAgeGroup::AGE_GROUP_UNSPECIFIED,
+    ];
+
+    /**
+     * Map Magento Gender string values to Merchant API v1 enum integers
+     */
+    private const GENDER_MAP = [
+        'male'   => MerchantGender::MALE,
+        'female' => MerchantGender::FEMALE,
+        'unisex' => MerchantGender::UNISEX,
+        ''       => MerchantGender::GENDER_UNSPECIFIED,
+    ];
 
     /**
      * @var ResourceModel\AttributeMapping\CollectionFactory
@@ -246,23 +270,22 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
     {
         $productObject = $product->getProduct();
         $productObject->setData('current_target_country', $this->getTargetCountry());
+
         $newShoppingProduct = new ProductInput();
-        $map = $this->getAttributesMapByProduct($productObject);
-        $base = $this->getBaseAttributes();
-        /** @var AttributeInterface[] $attributes */
+        $googleAttributes   = new ProductAttributes();
+
+        $map        = $this->getAttributesMapByProduct($productObject);
+        $base       = $this->getBaseAttributes();
         $attributes = array_merge($base, $map);
 
-        /**
-         * Parent Item Fix, if only simple non visible product is queued
-         */
         if (Visibility::VISIBILITY_NOT_VISIBLE == $productObject->getVisibility()
-            && !$productObject->getData('item_parent_product')) {
+            && !$productObject->getData('item_parent_product')
+        ) {
             $this->setParentProductOnChild->execute($productObject);
         }
 
         foreach ($attributes as $attribute) {
             try {
-                $googleAttributes = new ProductAttributes();
                 $attribute->convertAttribute($productObject, $newShoppingProduct, $googleAttributes);
             } catch (LocalizedException $exception) {
                 $product->setStatus(ProductsInterface::ERROR_STATUS);
@@ -274,42 +297,94 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
             }
         }
 
-        $this->checkForIdentifierExist($newShoppingProduct);
-        $this->checkForValidProduct($newShoppingProduct);
+        $this->checkForIdentifierExist($googleAttributes);
+        $this->checkForValidProduct($googleAttributes);
+
+        // ── Required fields on ProductInput (Merchant API v1) ──────────────────
+        // Content API: these were set inside the product body automatically.
+        // Merchant API v1: must be set explicitly as top-level fields on ProductInput.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        $storeId         = $productObject->getStoreId();
+        $targetCountry   = $this->getTargetCountry();
+        $contentLanguage = $this->googleHelper->getConfig()
+            ->getDefaultContentLanguage($storeId) ?: 'en';
+
+        // offerId — your unique product identifier (SKU)
+        $newShoppingProduct->setOfferId((string) $productObject->getSku());
+
+        // contentLanguage — ISO 639-1 two-letter language code e.g. 'en'
+        $newShoppingProduct->setContentLanguage(strtolower($contentLanguage));
+
+        // feedLabel — target country code e.g. 'US'
+        // Replaces the old targetCountry / feedLabel concept from Content API
+        $newShoppingProduct->setFeedLabel(strtoupper($targetCountry));
+
+        // ❌ REMOVED: setChannel() does NOT exist in Merchant API v1 PHP client.
+        // Channel (ONLINE/LOCAL) is set automatically by the data source type
+        // configured in Google Merchant Center — no code needed here.
+
+        // Attach all product attributes to the ProductInput
+        $newShoppingProduct->setProductAttributes($googleAttributes);
+
         return $newShoppingProduct;
     }
 
     /**
      * Check for specific value is set or not.
-     * for some google category 166 need age and gender values
-     * if those value not set then set default
+     * For some Google categories (e.g. 166) age group and gender are required.
+     * If those values are not set then apply defaults.
      *
-     * @param ProductInput $newShoppingProduct
+     * Merchant API v1: setAgeGroup() and setGender() require enum integers,
+     * NOT plain strings as in the Content API.
+     *
+     * @param ProductAttributes $googleAttributes
      */
-    protected function checkForValidProduct($newShoppingProduct)
+    protected function checkForValidProduct(ProductAttributes $googleAttributes): void
     {
-        if (!$newShoppingProduct->getAgeGroup() || $newShoppingProduct->getAgeGroup() == '') {
-            $newShoppingProduct->setAgeGroup(AgeGroup::AGE_GROUP_DEFAULT_FOR_GOOGLE);
+        // --- Age Group ---
+        // getAgeGroup() returns an int (enum). 0 == AGE_GROUP_UNSPECIFIED (not set).
+        if (!$googleAttributes->getAgeGroup()
+            || $googleAttributes->getAgeGroup() === MerchantAgeGroup::AGE_GROUP_UNSPECIFIED
+        ) {
+            $defaultAgeGroup = strtolower(trim(AgeGroup::AGE_GROUP_DEFAULT_FOR_GOOGLE));
+            $googleAttributes->setAgeGroup(
+                self::AGE_GROUP_MAP[$defaultAgeGroup] ?? MerchantAgeGroup::ADULT
+            );
         }
 
-        if (!$newShoppingProduct->getGender() || $newShoppingProduct->getGender() == '') {
-            $newShoppingProduct->setGender(Gender::GENDER_DEFAULT_FOR_GOOGLE);
+        // --- Gender ---
+        // getGender() returns an int (enum). 0 == GENDER_UNSPECIFIED (not set).
+        if (!$googleAttributes->getGender()
+            || $googleAttributes->getGender() === MerchantGender::GENDER_UNSPECIFIED
+        ) {
+            $defaultGender = strtolower(trim(Gender::GENDER_DEFAULT_FOR_GOOGLE));
+            $googleAttributes->setGender(
+                self::GENDER_MAP[$defaultGender] ?? MerchantGender::MALE
+            );
         }
     }
 
     /**
-     * Check for identifier exist if no then set it no
+     * If no unique product identifiers are present, set identifierExists = false.
      *
-     * @param ProductInput $newShoppingProduct
+     * Merchant API v1: getGtin() is now getGtins() (repeated field).
+     *
+     * @param ProductAttributes $googleAttributes
      */
-    protected function checkForIdentifierExist($newShoppingProduct)
+    protected function checkForIdentifierExist(ProductAttributes $googleAttributes): void
     {
-        if (!$newShoppingProduct->getGtin()
-            && (!$newShoppingProduct->getBrand()
-                || $newShoppingProduct->getBrand() == 'Unbranded')
-            && !$newShoppingProduct->getMpn()
-        ) {
-            $newShoppingProduct->setIdentifierExists(false);
+        // getGtins() returns a RepeatedField – convert to array and filter empty values
+        $gtins    = iterator_to_array($googleAttributes->getGtins());
+        $hasGtin  = !empty(array_filter($gtins));
+
+        $brand    = $googleAttributes->getBrand();
+        $hasBrand = !empty($brand) && $brand !== 'Unbranded';
+
+        $hasMpn   = !empty($googleAttributes->getMpn());
+
+        if (!$hasGtin && !$hasBrand && !$hasMpn) {
+            $googleAttributes->setIdentifierExists(false);
         }
     }
 
@@ -322,13 +397,13 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
     protected function getAttributesMapByProduct(ProductInterface $product)
     {
         $result = [];
-        $group = $this->googleHelper->getAttributeGroupsFlat();
+        $group  = $this->googleHelper->getAttributeGroupsFlat();
+
         foreach ($this->getAttributesCollection() as $attribute) {
             $productAttribute = $this->googleHelper
                 ->getProductAttribute($product, $attribute->getAttributeId());
 
             if ($productAttribute) {
-                // define final attribute name
                 if ($attribute->getGoogleAttribute()) {
                     $name = $attribute->getGoogleAttribute();
                 } else {
@@ -338,12 +413,10 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
                 if ($name) {
                     $name = $this->googleHelper->normalizeName($name);
                     if (isset($group[$name])) {
-                        // if attribute is in the group
                         if (!isset($result[$group[$name]])) {
                             $result[$group[$name]] = $this->createAttribute($group[$name]);
                         }
 
-                        // add group attribute to parent attribute
                         $result[$group[$name]]->addData(
                             [
                                 'group_attribute_' . $name => $this->createAttribute($name)->addData(
@@ -373,7 +446,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      */
     protected function getBaseAttributes()
     {
-        $names = $this->googleHelper->getBaseAttributes();
+        $names      = $this->googleHelper->getBaseAttributes();
         $attributes = [];
         foreach ($names as $name) {
             $attributes[$name] = $this->createAttribute($name);
@@ -423,13 +496,14 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
     protected function createAttribute($name)
     {
         $modelNamePrefix = \Egits\GoogleMerchantApi\Model\Attributes::class;
-        $modelName = $modelNamePrefix . $this->prepareModelName($name);
-        $useDefault = false;
-        $attributeModel = null;
-        $objectManager = ObjectManager::getInstance();
+        $modelName       = $modelNamePrefix . $this->prepareModelName($name);
+        $useDefault      = false;
+        $attributeModel  = null;
+        $objectManager   = ObjectManager::getInstance();
+
         try {
             $attributeModel = $objectManager->create($modelName);
-            $useDefault = !$attributeModel;
+            $useDefault     = !$attributeModel;
         } catch (\Exception $e) {
             $useDefault = true;
         }

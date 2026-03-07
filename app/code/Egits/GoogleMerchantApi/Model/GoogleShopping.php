@@ -14,7 +14,13 @@ use Egits\GoogleMerchantApi\Api\LogRepositoryInterface;
 use Egits\GoogleMerchantApi\Helper\GoogleConfig;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Google\ApiCore\ApiException;
+use Google\Shopping\Merchant\Products\V1\Client\ProductInputsServiceClient;
 use Google\Shopping\Merchant\Products\V1\Client\ProductsServiceClient;
+use Google\Shopping\Merchant\Products\V1\InsertProductInputRequest;
+use Google\Shopping\Merchant\Products\V1\DeleteProductInputRequest;
+use Google\Shopping\Merchant\Products\V1\GetProductRequest;
+use Google\Shopping\Merchant\Products\V1\ListProductsRequest;
+use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Framework\Filesystem\Driver\File;
 
 /**
@@ -26,8 +32,8 @@ class GoogleShopping
     /**
      * App name and scope
      */
-    public const APP_NAME = 'Magento 2 Shopping';
-    public const SCOPE = 'https://www.googleapis.com/auth/merchantapi';
+    public const APP_NAME  = 'Magento 2 Shopping';
+    public const SCOPE     = 'https://www.googleapis.com/auth/merchantapi';
 
     /**
      * Helper google
@@ -55,18 +61,21 @@ class GoogleShopping
      *
      * @var ProductsServiceClient
      */
-    protected $shoppingService;
+    protected $productInputsClient;
 
     /**
      * Service account js file path.
      *
+     * @var ProductsServiceClient
+     */
+    protected $productsClient;
+
+    /**
      * @var string
      */
     private $serviceAccountJsonFile;
 
     /**
-     * Stores id
-     *
      * @var int
      */
     protected $storeId;
@@ -92,7 +101,7 @@ class GoogleShopping
     /**
      * Get Google api client.
      *
-     * @return \Google_Client
+     * @return \Google\Client
      */
     public function getClient()
     {
@@ -129,22 +138,21 @@ class GoogleShopping
     }
 
     /**
-     * Get shopping content service
-     *
-     * @return ProductsServiceClient
+     * Get ProductInputsServiceClient (insert / delete operations)
+     * @return ProductInputsServiceClient|null
      */
-    public function getShoppingService()
+    public function getProductInputsClient()
     {
-        if (isset($this->shoppingService)) {
-            return $this->shoppingService;
+        if (isset($this->productInputsClient)) {
+            return $this->productInputsClient;
         }
 
         try {
-            $isEnabledForStore = $this->googleHelper->getConfig()->isGoogleMerchantApiEnabled($this->storeId);
+            $isEnabled      = $this->googleHelper->getConfig()->isGoogleMerchantApiEnabled($this->storeId);
             $accountJsonPath = $this->googleHelper->getConfig()->getAccountJsonFullFilePath($this->storeId);
 
-            if ($isEnabledForStore && $this->fileDriver->isExists($accountJsonPath)) {
-                $this->shoppingService = new ProductsServiceClient(
+            if ($isEnabled && $this->fileDriver->isExists($accountJsonPath)) {
+                $this->productInputsClient = new ProductInputsServiceClient(
                     ['credentials' => $this->serviceAccountJsonFile]
                 );
             }
@@ -152,47 +160,76 @@ class GoogleShopping
             $this->googleHelper->writeDebugLogFile($exception);
         }
 
+        return $this->productInputsClient;
+    }
 
-        return $this->shoppingService;
+    /**
+     * Get ProductsServiceClient (read operations)
+     *
+     * @return ProductsServiceClient|null
+     */
+    public function getShoppingService()
+    {
+        if (isset($this->productsClient)) {
+            return $this->productsClient;
+        }
+
+        try {
+            $isEnabled       = $this->googleHelper->getConfig()->isGoogleMerchantApiEnabled($this->storeId);
+            $accountJsonPath = $this->googleHelper->getConfig()->getAccountJsonFullFilePath($this->storeId);
+
+            if ($isEnabled && $this->fileDriver->isExists($accountJsonPath)) {
+                $this->productsClient = new ProductsServiceClient(
+                    ['credentials' => $this->serviceAccountJsonFile]
+                );
+            }
+        } catch (\Exception $exception) {
+            $this->googleHelper->writeDebugLogFile($exception);
+        }
+
+        return $this->productsClient;
     }
 
     /**
      * Insert product
-     *
-     * @param \Google\Shopping\Merchant\Products\V1\Product $product
-     * @param integer $storeId
-     * @return \Google\Shopping\Merchant\Products\V1\Product product
+     * @param ProductInput $productInput
+     * @param int|null     $storeId
+     * @return \Google\Shopping\Merchant\Products\V1\ProductInput
      * @throws \Exception
      */
-    public function insertProduct($product, $storeId = null)
+    public function insertProduct(ProductInput $productInput, $storeId = null)
     {
         $this->setStore($storeId);
 
-        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
         $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
 
-        $client = $this->getShoppingService();
+        $this->googleHelper->writeDebugLogFile('accountId: ' . $accountId);
+        $this->googleHelper->writeDebugLogFile('dataSourceId: ' . $dataSourceId);
 
-        $parent = sprintf(
-            'accounts/%s/dataSources/%s',
-            $accountId,
-            $dataSourceId
-        );
+        // parent  = accounts/{account}
+        // dataSource = accounts/{account}/dataSources/{datasource}
+        $parent     = sprintf('accounts/%s', $accountId);
+        $dataSource = sprintf('accounts/%s/dataSources/%s', $accountId, $dataSourceId);
+
+        $request = new InsertProductInputRequest();
+        $request->setParent($parent);
+        $request->setProductInput($productInput);
+        $request->setDataSource($dataSource);
 
         try {
-            $response = $client->insertProduct([
-                'parent' => $parent,
-                'product' => $product
-            ]);
+            $response = $this->getProductInputsClient()->insertProductInput($request);
             return $response;
         } catch (\Exception $e) {
+            $this->googleHelper->writeDebugLogFile($e);
             throw $e;
         }
     }
+
     /**
      * Product batch insert
      *
-     * @param \Google\Shopping\Merchant\Products\V1\Product[] $products
+     * @param \Google\Shopping\Merchant\Products\V1\ProductInput[] $products
      * @param int|null $storeId
      * @return array
      */
@@ -200,168 +237,114 @@ class GoogleShopping
     {
         $this->setStore($storeId);
 
-        $merchantId   = 5715135760;
-        $dataSourceId = 10616245774;
-        $accessToken  = "ya29.c.c0AZ4bNpZBd0okHbTB860IvbjYQMg6WeXOyxu8ZZh1sDXMV4VlfWPoPGB2vIsjH-EwaHV-vVpJh8441aqMGe9jz7ApIRjb_ZssLMEVCBvuJGgk0RLObu_RLPN547x4Vifm-5UFjUkbUf9H2CrcegXnYL-ePi-NAIGED6w8jqzbJEtVYkcXe_kv5D_V8RyKRNl66QBrCN4BdFUXgroTXiMIuvrq06L43ZsT2x3S1Gw3UMgRmkWKPr_dVrne09ifenaDm4-N6UgGtgN-JcrAELrSMinqlgNeknDk4ddN-W7luK2lODwa583lpdgR4-qyz3brQps2thzBF_j5R9j07dKrw0txkJUU8GD9f4p20UhFCVp397-G494YNzXvT385KO3UJMi8FFf6d2z8_apFZweeRVR5-ov45SQe515p4nYMJ9Xjaaz2OMm72yd7saXe8-Y-JutVuqYxcU6kMje8s1Ynicm3tx2nigwR8IS_rqO684u29doylgewZe96fnpgBdUtX5OfUXorm0YSnYlStiskhQxoagwuOoyen2V3g6OS9qZlhp-O6vXQd7UQbxSllgSb4q-iJR26_Z5r47q-5MgJo3jyc-kzgvMrB7Obbo49j7nyY0ycukI5aOhBjafwgMv4R7o71Sn-cOiYky7v5Yv6F_dVBnibY2-tRcJg4lV-3Z-Y50ZgX1m7t2I8w3bg5Rk8n0hMOiizom6J5MdbUUkdFp7RyQnWgqSyxrdt77_QRIji5IyofJBMtll1n5utgx6b2YcUVr9xiz__RiQmQqaxwqQcZyMk8XZluQZpYOxs2B7tw1S62bhF28JJVg2oIMs9-JJMpQ-bUO9fFZm4a-2SB-qFYX822iOxgft5o2U_2tmvw_52VaRnvzUUxna75XJe6uI2diwpRXOSqM7FStbrjSt4JqOlxbrliUIjYziuaUwaUyS6q7qd3j45WxQOojMRqnbYsBFJzJlabheaxf_3j15enp78YYB6kdlmM9yhur9OgXlqJVit7YJ";
+        $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
 
-        $url = sprintf(
-            'https://merchantapi.googleapis.com/products/v1/accounts/%s/productInputs:insert'
-            . '?dataSource=accounts/%s/dataSources/%s',
-            $merchantId,
-            $merchantId,
-            $dataSourceId
-        );
-
-        // ── Build payloads — mirror exactly what your original loop did ──────────
-        // Original added only: setChannel("online") + setExpirationDate()
-        // Everything else was already on the $product before being passed in
-        $payloads = [];
-        foreach ($products as $itemId => $product) {
-            $payloads[$itemId] = array_merge($product, [
-                'channel'        => 'ONLINE',                                        // was: $product->setChannel("online")
-                'expirationDate' => date('Y-m-d', time() + 30 * 24 * 60 * 60),     // was: $product->setExpirationDate($expDate)
-            ]);
-        }
-
-        // ── Send all concurrently (replaces customBatch) ─────────────────────────
-        $multiHandle = curl_multi_init();
-        $handles     = [];
-
-        foreach ($payloads as $itemId => $payload) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    'Authorization: Bearer ' . $accessToken,
-                    'Content-Type: application/json',
-                ],
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_TIMEOUT    => 30,
-            ]);
-
-            curl_multi_add_handle($multiHandle, $ch);
-            $handles[$itemId] = $ch;
-        }
-
-        $running = null;
-        do {
-            curl_multi_exec($multiHandle, $running);
-            curl_multi_select($multiHandle);
-        } while ($running > 0);
-
-        // ── Collect results — same shape as customBatch response ─────────────────
         $result = ['success' => [], 'failed' => []];
 
-        foreach ($handles as $itemId => $ch) {
-            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $body     = json_decode(curl_multi_getcontent($ch), true);
+        foreach ($products as $itemId => $productInput) {
+            try {
+                $parent     = sprintf('accounts/%s', $accountId);
+                $dataSource = sprintf('accounts/%s/dataSources/%s', $accountId, $dataSourceId);
 
-            if ($httpCode >= 200 && $httpCode < 300) {
-                $result['success'][$itemId] = $body;
-            } else {
+                $request = new InsertProductInputRequest();
+                $request->setParent($parent);
+                $request->setProductInput($productInput);
+                $request->setDataSource($dataSource);
+
+                $response                  = $this->getProductInputsClient()->insertProductInput($request);
+                $result['success'][$itemId] = $response;
+            } catch (\Exception $e) {
+                $this->googleHelper->writeDebugLogFile($e);
                 $result['failed'][$itemId] = [
-                    'batchId'  => $itemId,                               // mirrors original batchId
-                    'httpCode' => $httpCode,
-                    'error'    => $body['error']['message'] ?? 'Unknown error',
+                    'batchId' => $itemId,
+                    'error'   => $e->getMessage(),
                 ];
             }
-
-            curl_multi_remove_handle($multiHandle, $ch);
-            curl_close($ch);
         }
 
-        curl_multi_close($multiHandle);
         return $result;
     }
     /**
-     * Product batch delete.
+     * Product batch delete
      *
-     * @param array $googleContentIds
+     * @param array    $googleContentIds
      * @param int|null $storeId
      * @return void
      */
     public function productBatchDelete($googleContentIds, $storeId = null)
     {
-        $this->setStore($storeId);
-        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
-
         foreach ($googleContentIds as $googleContentId) {
-            try {
-                $name = sprintf(
-                    'accounts/%s/productInputs/%s',
-                    $accountId,
-                    $googleContentId
-                );
-
-                $this->googleHelper->writeDebugLogFile('Deleting product: ' . $name);
-
-                $this->getShoppingService()->deleteProductInput(['name' => $name]);
-
-            } catch (\Exception $e) {
-                $this->googleHelper->writeDebugLogFile($e);
-            }
+            $this->deleteProduct($googleContentId, $storeId);
         }
     }
-
     /**
-     * Update product
+     * Update product (insert/update uses same endpoint in Merchant API)
      *
-     * @param \Google\Shopping\Merchant\Products\V1\Product $product
-     * @param int|null $storeId
-     * @return \Google\Shopping\Merchant\Products\V1\Product
+     * @param ProductInput $productInput
+     * @param int|null     $storeId
+     * @return \Google\Shopping\Merchant\Products\V1\ProductInput
      */
-    public function updateProduct($product, $storeId = null)
+    public function updateProduct(ProductInput $productInput, $storeId = null)
     {
-        return $this->insertProduct($product, $storeId);
+        return $this->insertProduct($productInput, $storeId);
     }
 
     /**
      * Delete product
      *
      * @param string $googleContentId
-     * @param int $storeId
+     * @param int    $storeId
      * @return void
      */
-    public function deleteProduct($googleContentId, $storeId)
+    // Line 362
+    public function deleteProduct($name, $storeId = null)
     {
         $this->setStore($storeId);
 
-        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
+        $dataSource   = sprintf('accounts/%s/dataSources/%s', $accountId, $dataSourceId);
 
-        $name = sprintf(
-            'accounts/%s/productInputs/%s',
-            $accountId,
-            $googleContentId
-        );
+        $this->googleHelper->writeDebugLogFile('deleteProduct name: ' . $name);
+        $this->googleHelper->writeDebugLogFile('deleteProduct dataSource: ' . $dataSource);
 
-        $this->getShoppingService()->deleteProductInput(['name' => $name]);
+        $request = new DeleteProductInputRequest([
+            'name'        => $name,
+            'data_source' => $dataSource,
+        ]);
+
+        $this->getProductInputsClient()->deleteProductInput($request);
     }
 
     /**
      * Get product
      *
-     * @param int $productId
+     * @param int      $productId
      * @param int|null $storeId
      * @return \Google\Shopping\Merchant\Products\V1\Product
      */
+    // Line 340
     public function getProduct($productId, $storeId = null)
     {
         $this->setStore($storeId);
+        if (strpos($productId, 'accounts/') === 0) {
+            $name = $productId;
+        } else {
+            $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+            $name      = sprintf('accounts/%s/products/%s', $accountId, $productId);
+        }
 
-        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $this->googleHelper->writeDebugLogFile('getProduct name: ' . $name);
 
-        $name = sprintf(
-            'accounts/%s/products/%s',
-            $accountId,
-            $productId
-        );
+        $request = new GetProductRequest();
+        $request->setName($name);
 
-        return $this->getShoppingService()->getProduct($name);
+        return $this->getShoppingService()->getProduct($request);
     }
 
     /**
-     * List product
+     * List products
      *
      * @param int|null $storeId
      * @return \Google\Shopping\Merchant\Products\V1\ListProductsResponse
@@ -374,13 +357,16 @@ class GoogleShopping
 
         $parent = sprintf('accounts/%s', $accountId);
 
-        return $this->getShoppingService()->listProducts($parent);
+        $request = new ListProductsRequest();
+        $request->setParent($parent);
+
+        return $this->getShoppingService()->listProducts($request);
     }
 
     /**
      * Get config
      *
-     * @return \Egits\GoogleMerchantApi\Helper\GoogleConfig
+     * @return GoogleConfig
      */
     protected function getConfig()
     {
@@ -415,6 +401,7 @@ class GoogleShopping
      * Set Store id
      *
      * @param int|null $storeId
+     * @return $this
      */
     public function setStore($storeId = null)
     {

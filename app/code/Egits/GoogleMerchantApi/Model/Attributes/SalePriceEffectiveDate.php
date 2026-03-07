@@ -19,7 +19,7 @@ class SalePriceEffectiveDate extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $effectiveDateFrom = $this->getGroupAttributeSalePriceEffectiveDateFrom();
         $fromValue = $effectiveDateFrom->getProductAttributeValue($product);
@@ -66,7 +66,8 @@ class SalePriceEffectiveDate extends Base
         }
 
         if ($dateString) {
-            $shoppingProduct->setSalePriceEffectiveDate($dateString);
+            $googleAttributes->setSalePriceEffectiveDate($dateString);
+            $shoppingProduct->setProductAttributes($googleAttributes);
         }
 
         return $shoppingProduct;

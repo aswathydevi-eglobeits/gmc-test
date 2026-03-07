@@ -56,13 +56,11 @@ class Price extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
         $product->setWebsiteId($product->getStore()->getWebsiteId());
         $store = $product->getStore();
-        // need to store current target country in registry and get it;
-        //$targetCountry = getTargetCountry($product->getStoreId());
-        $isSalePriceAllowed = true;//($targetCountry == 'US');
+        $isSalePriceAllowed = true;
 
         // get tax settings
         $priceDisplayType = $this->taxData->getPriceDisplayType($product->getStoreId());
@@ -101,40 +99,43 @@ class Price extends Base
             }
         }
 
-        $attributes = new ProductAttributes();
-        $shoppingPrice =new GooglePrice();
-        $shoppingPrice->setCurrencyCode($store->getBaseCurrencyCode());
+        $currencyCode = $store->getBaseCurrencyCode();
+
+        $shoppingPrice = new GooglePrice();
+        $shoppingPrice->setCurrencyCode($currencyCode);
+
         if ($isSalePriceAllowed) {
             // set sale_price and effective dates for it
             if ($price && ($price - $finalPrice) > .0001) {
                 $salesPrice = new GooglePrice();
-                $salesPrice->setCurrencyCode($store->getBaseCurrencyCode());
-                $shoppingPrice->setAmountMicros(sprintf('%.2f', $price));
-                $salesPrice->setAmountMicros($finalPrice);
-                $attributes->setSalePrice($salesPrice);
+                $salesPrice->setCurrencyCode($currencyCode);
+                $salesPrice->setAmountMicros((int)(round((float)$finalPrice, 2) * 1000000));
+                $shoppingPrice->setAmountMicros((int)(round((float)$price, 2) * 1000000));
+                $googleAttributes->setSalePrice($salesPrice);
+
                 $effectiveDate = $this->getGroupAttributeSalePriceEffectiveDate();
                 if ($effectiveDate) {
                     $effectiveDate->setGroupAttributeSalePriceEffectiveDateFrom(
                         $this->getGroupAttributeSalePriceEffectiveDateFrom()
                     )->setGroupAttributeSalePriceEffectiveDateTo(
                         $this->getGroupAttributeSalePriceEffectiveDateTo()
-                    )->convertAttribute($product, $shoppingProduct);
+                    )->convertAttribute($product, $shoppingProduct, $googleAttributes);
                 }
             } else {
-                $shoppingPrice->setAmountMicros(sprintf('%.2f', $finalPrice));
+                $shoppingPrice->setAmountMicros((int)(round((float)$price, 2) * 1000000));
             }
 
             // calculate taxes
             $tax = $this->getGroupAttributeTax();
             if (!$inclTax && $tax) {
-                $tax->convertAttribute($product, $shoppingProduct);
+                $tax->convertAttribute($product, $shoppingProduct, $googleAttributes);
             }
         } else {
-            $shoppingPrice->setAmountMicros(sprintf('%.2f', $price));
+            $shoppingPrice->setAmountMicros((int)(round((float)$price, 2) * 1000000));
         }
 
-        $attributes->setPrice($shoppingPrice);
-        $shoppingProduct->setProductAttributes($attributes);
+        $googleAttributes->setPrice($shoppingPrice);
+        $shoppingProduct->setProductAttributes($googleAttributes);
 
         return $shoppingProduct;
     }

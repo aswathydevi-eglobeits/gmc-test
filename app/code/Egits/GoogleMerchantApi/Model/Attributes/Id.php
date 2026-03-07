@@ -27,7 +27,7 @@ class Id extends Base
      * @return ProductInput
      * @throws LocalizedException
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         if (strlen($product->getSku()) > 30) {
             throw new LocalizedException(__('Product sku length exceeded 25 characters'));
@@ -45,7 +45,7 @@ class Id extends Base
                 'P-' . $parentProduct->getId() . '-' . $product->getSku(),
                 $product->getStoreId()
             );
-            $shoppingProduct->setItemGroupId(
+            $googleAttributes->setItemGroupId(
                 $this->googleHelper->buildContentProductId($parentProduct->getSku(), $product->getStoreId())
             );
         }

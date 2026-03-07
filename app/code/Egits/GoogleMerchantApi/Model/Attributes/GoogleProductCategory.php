@@ -51,7 +51,7 @@ class GoogleProductCategory extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $productCategories = $product->getCategoryIds();
         $productMappedCategories = $this->getMappedCategories($productCategories);
@@ -61,7 +61,8 @@ class GoogleProductCategory extends Base
             $value = $this->googleHelper->getConfig()->getDefaultGoogleCategory($product->getStoreId());
         }
 
-        $shoppingProduct->setGoogleProductCategory($value);
+        $googleAttributes->setGoogleProductCategory($value);
+        $shoppingProduct->setProductAttributes($googleAttributes);
 
         return $shoppingProduct;
     }

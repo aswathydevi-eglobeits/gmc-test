@@ -37,6 +37,11 @@ class LogsRepository extends AbstractRepository implements LogRepositoryInterfac
     protected $syncType = 0;
 
     /**
+     * @var int|null
+     */
+    protected $storeId = null;
+
+    /**
      * @var LogInterfaceFactory
      */
     protected $logFactory;

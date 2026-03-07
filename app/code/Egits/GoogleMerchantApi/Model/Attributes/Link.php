@@ -15,7 +15,7 @@ use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\Exception\LocalizedException;
-use Google\Shopping\Merchant\Products\V1\ProductAttributes;
+
 /**
  * Class Link
  * Google merchant api product url attribute
@@ -27,10 +27,11 @@ class Link extends Base
      *
      * @param ProductInterface|Product $product
      * @param ProductInput $shoppingProduct
+     * @param \Google\Shopping\Merchant\Products\V1\ProductAttributes $googleAttributes
      * @return ProductInput
      * @throws LocalizedException
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
         $url = $product->getProductUrl();
         if ($product->getVisibility() == Visibility::VISIBILITY_NOT_VISIBLE) {
@@ -50,8 +51,8 @@ class Link extends Base
                 && $config->getAddStoreCodeToUrl($storeId)
             ) {
                 $urlInfo = \Laminas\Uri\UriFactory::factory($url);
-                $store = $product->getStore()->getCode();
-                $query = $urlInfo->getQuery();
+                $store   = $product->getStore()->getCode();
+                $query   = $urlInfo->getQuery();
 
                 if (!empty($query)) {
                     $url .= '&___store=' . $store;
@@ -65,9 +66,7 @@ class Link extends Base
                 $url .= 'utm_source=GoogleShopping';
             }
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
-            $attributes = new ProductAttributes();
-            $attributes->setLink($url);
-            $shoppingProduct->setProductAttributes($attributes); // ✅ correct method name
+            $googleAttributes->setLink($url);
         }
 
         return $shoppingProduct;

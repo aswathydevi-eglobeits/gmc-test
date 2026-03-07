@@ -22,7 +22,7 @@ class Title extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $mapValue = $this->getProductAttributeValue($product);
         $name = $this->getGroupAttributeName();
@@ -60,7 +60,7 @@ class Title extends Base
         }
 
         $titleText = ucwords(strtolower($this->googleHelper->cleanAtomAttribute($titleText)));
-        $shoppingProduct->setTitle($titleText);
+        $googleAttributes->setTitle($titleText);
 
         return $shoppingProduct;
     }

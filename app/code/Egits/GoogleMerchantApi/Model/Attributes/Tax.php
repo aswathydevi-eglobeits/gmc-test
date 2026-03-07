@@ -59,7 +59,7 @@ class Tax extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
 
         if ($this->taxData->getConfig()->priceIncludesTax()) {

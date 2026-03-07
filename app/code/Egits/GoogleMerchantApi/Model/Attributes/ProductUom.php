@@ -58,8 +58,9 @@ class ProductUom extends Base
             $unitPricingBaseMeasure = new UnitPricingBaseMeasure();
             $unitPricingBaseMeasure->setUnit($basePriceReferenceUnit);
             $unitPricingBaseMeasure->setValue($basePriceReferenceAmount);
-            $shoppingProduct->setUnitPricingMeasure($unitPricingMeasure);
-            $shoppingProduct->setUnitPricingBaseMeasure($unitPricingBaseMeasure);
+            $googleAttributes->setUnitPricingMeasure($unitPricingMeasure);
+            $googleAttributes->setUnitPricingBaseMeasure($unitPricingBaseMeasure);
+            $shoppingProduct->setProductAttributes($googleAttributes);
         }
 
         return $shoppingProduct;

@@ -25,24 +25,24 @@ class Condition extends Base
     public const CONDITION_USED = 'used';
     public const CONDITION_REFURBISHED = 'refurbished';
 
+    private const CONDITION_MAP = [
+        self::CONDITION_NEW         => 0,
+        self::CONDITION_USED        => 1,
+        self::CONDITION_REFURBISHED => 2,
+    ];
+
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
-        $availableConditions = [
-            self::CONDITION_NEW,
-            self::CONDITION_USED,
-            self::CONDITION_REFURBISHED
-        ];
-
         $mapValue = $this->getProductAttributeValue($product);
-        if ($mapValue && in_array($mapValue, $availableConditions)) {
-            $condition = $mapValue;
-        } else {
-            $condition = self::CONDITION_NEW;
-        }
 
-        return $shoppingProduct->setCondition($condition);
+        $condition = self::CONDITION_MAP[$mapValue]
+            ?? self::CONDITION_MAP[self::CONDITION_NEW];
+
+        $googleAttributes->setCondition($condition);
+        $shoppingProduct->setProductAttributes($googleAttributes);
+        return $shoppingProduct;
     }
 }

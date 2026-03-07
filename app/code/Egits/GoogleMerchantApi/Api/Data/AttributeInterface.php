@@ -24,5 +24,5 @@ interface AttributeInterface
      * @return \Google\Shopping\Merchant\Products\V1\ProductInput
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function convertAttribute($product, $shoppingProduct);
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes);
 }

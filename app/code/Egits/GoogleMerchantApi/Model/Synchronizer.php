@@ -39,7 +39,6 @@ use Egits\GoogleMerchantApi\Model\Product as product;
  */
 class Synchronizer
 {
-
     /**
      * @var ProductsRepository
      */
@@ -98,99 +97,71 @@ class Synchronizer
     protected $filterGroupBuilder;
 
     /**
-     * Get items skipped
-     *
      * @var array
      */
     protected $itemsSkipped = [];
 
     /**
-     * Total items skipped
-     *
      * @var int
      */
     protected $totalSkipped = 0;
 
     /**
-     * Total items updated
-     *
      * @var int
      */
     protected $totalUpdated = 0;
 
     /**
-     * Total items deleted
-     *
      * @var int
      */
     protected $totalDeleted = 0;
 
     /**
-     * Get updated items
-     *
      * @var array
      */
     protected $itemsUpdated = [];
 
     /**
-     * Get items deleted
-     *
      * @var array
      */
     protected $itemsDeleted = [];
 
     /**
-     * Get items failed
-     *
      * @var array
      */
     protected $itemsFailed = [];
 
     /**
-     * Get total failed
-     *
      * @var int
      */
     protected $totalFailed = 0;
 
     /**
-     * Synchronization errors
-     *
      * @var array
      */
     protected $errors = [];
 
     /**
-     * Current Synchronizing store id
-     *
      * @var int
      */
     protected $storeId;
 
     /**
-     * items that are to be deleted.
-     *
      * @var array
      */
     protected $batchDeleteProducts;
 
     /**
-     * items that are deleted
-     *
      * @var ProductsInterface[]
      */
     protected $batchDeleteItems;
 
     /**
-     * Items that are to be inserted or updated
-     *
      * @var array
      */
     protected $batchInsertProducts;
 
     /**
-     * Items that are updated to inserted
-     *
      * @var ProductsInterface[]
      */
     protected $batchInsertItems;
@@ -204,6 +175,7 @@ class Synchronizer
      * @var Registry
      */
     protected $registry;
+
     /**
      * @var product
      */
@@ -237,17 +209,17 @@ class Synchronizer
         Registry $registry,
         product $product
     ) {
-        $this->productsRepository = $productsRepository;
+        $this->productsRepository    = $productsRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
-        $this->productValidator = $productValidator;
-        $this->dateTimeFactory = $dateTimeFactory;
-        $this->googleHelper = $googleHelper;
-        $this->googleShopping = $googleShopping;
-        $this->filterBuilder = $filterBuilder;
-        $this->filterGroupBuilder = $filterGroupBuilder;
-        $this->sortOrderBuilder = $sortOrderBuilder;
-        $this->registry = $registry;
-        $this->product = $product;
+        $this->productValidator      = $productValidator;
+        $this->dateTimeFactory       = $dateTimeFactory;
+        $this->googleHelper          = $googleHelper;
+        $this->googleShopping        = $googleShopping;
+        $this->filterBuilder         = $filterBuilder;
+        $this->filterGroupBuilder    = $filterGroupBuilder;
+        $this->sortOrderBuilder      = $sortOrderBuilder;
+        $this->registry              = $registry;
+        $this->product               = $product;
     }
 
     /**
@@ -312,7 +284,6 @@ class Synchronizer
             if ($item->getProduct()->getTypeId() == 'configurable') {
                 $productsChildItems = $this->getAllChildProductsAsItem($item);
                 if (!empty($productsChildItems)) {
-                    //remove child item from items
                     foreach ($productsChildItems as $itemKey => $childItem) {
                         if (isset($items[$itemKey])) {
                             unset($items[$itemKey]);
@@ -415,32 +386,35 @@ class Synchronizer
      */
     public function batchSynchronizeItems($items)
     {
-        $copy = $items;
+        $copy    = $items;
         $storeId = $this->storeId;
         $this->prepareItemsForBatchSynchronization($copy);
-        if (isset($this->batchInsertProducts[$this->storeId])
-            && count($this->batchInsertProducts[$this->storeId]) > 0) {
-            $storeProducts = $this->batchInsertProducts[$storeId];
-            $result = null;
+
+        if (isset($this->batchInsertProducts[$storeId])
+            && count($this->batchInsertProducts[$storeId]) > 0
+        ) {
+            $storeProducts = $this->batchInsertProducts[$storeId]; // ✅ consistent
+            $result        = null;
             try {
                 $result = $this->googleShopping->productBatchInsert($storeProducts, $storeId);
             } catch (Exception $e) {
                 $this->errors[] = "Failed to batch update for store " . $storeId . ":" . $e->getMessage();
-                $this->googleHelper->writeDebugLogFile($e, $this->storeId);
+                $this->googleHelper->writeDebugLogFile($e, $storeId);
             }
 
             $this->processBatchInsertResponse($result);
         }
 
-        if (isset($this->batchDeleteProducts[$this->storeId])
-            && count($this->batchDeleteProducts[$this->storeId]) > 0) {
-            $result = null;
+        if (isset($this->batchDeleteProducts[$storeId])
+            && count($this->batchDeleteProducts[$storeId]) > 0
+        ) {
             foreach ($this->batchDeleteProducts as $storeId => $productIds) {
+                $result = null;
                 try {
                     $result = $this->googleShopping->productBatchDelete($productIds, $storeId);
                 } catch (Exception $exception) {
                     $this->errors[] = "Failed to batch Delete for store " . $storeId . ":" . $exception->getMessage();
-                    $this->googleHelper->writeDebugLogFile($exception, $this->storeId);
+                    $this->googleHelper->writeDebugLogFile($exception, $storeId); // ✅ use $storeId not $this->storeId
                 }
 
                 $this->processBatchDeleteResponse($result);
@@ -461,6 +435,7 @@ class Synchronizer
         if (is_array($this->batchInsertItems) && count($this->batchInsertItems) > 0) {
             $this->batchInsertItems = [];
         }
+
         foreach ($items as &$item) {
             if ($item->getProduct()->getTypeId() == 'configurable') {
                 $productsChildItems = $this->getAllChildProductsAsItem($item);
@@ -497,8 +472,8 @@ class Synchronizer
                     }
 
                     $this->batchDeleteItems[] = $item;
-                    $this->batchDeleteProducts[$item->getProductStoreId()][$item->getId()] = $item->getGoogleContentId(
-                    );
+                    $this->batchDeleteProducts[$item->getProductStoreId()][$item->getId()]
+                        = $item->getGoogleContentId();
                     $this->deleteItemFromAllTargetCountries($item);
                 } else {
                     if (!isset($this->batchInsertProducts[$item->getProductStoreId()])) {
@@ -506,9 +481,15 @@ class Synchronizer
                     }
 
                     /** @var AttributeMapType $attributeMap */
-                    $attributeMap = $item->getType($this->googleHelper->getConfig()->getEnabledTargetCountry());
-                    $this->batchInsertProducts[$item->getProductStoreId()][$item->getId()]
-                        = $attributeMap->convertAttributes($item);
+                    $attributeMap = $item->getType(
+                        $this->googleHelper->getConfig()->getEnabledTargetCountry()
+                    );
+
+                    /** @var ProductInput $productInput */
+                    $productInput = $attributeMap->convertAttributes($item);
+
+
+                    $this->batchInsertProducts[$item->getProductStoreId()][$item->getId()] = $productInput;
                     $this->batchInsertItems[] = $item;
                     $this->addMultipleTargetCountryItemsToBatch($item, $attributeMap);
                 }
@@ -523,37 +504,15 @@ class Synchronizer
     /**
      * Process batch delete response.
      *
-     * Update expiration dates or collect errors.
-     *
-     * @param ProductInput $response
+     * @param mixed $response
      */
     protected function processBatchDeleteResponse($response)
     {
-        if ($response) { // update expiration dates or collect errors
-            foreach ($response->getEntries() as $batchEntry) {
-                $resEntries[$batchEntry->getBatchId()] = $batchEntry;
-            }
-
+        if (is_array($response)) {
             foreach ($this->batchDeleteItems as $item) {
-                if (!isset($resEntries[$item->getId()])
-                    || !is_a(
-                        $resEntries[$item->getId()],
-                        ProductInput::class
-                    )
-                ) {
-                    $this->errors[] = $item->getId() . " - missing response";
-                    $this->itemFailed($item, new Exception($item->getId() . " - missing response"));
-                    $this->productsRepository->save($item);
-                    continue;
-                }
-
-                if ($resErrors = $resEntries[$item->getId()]->getErrors()) {
-                    foreach ($resErrors->getErrors() as $resError) {
-                        $this->totalFailed++;
-                        $this->errors[] = $item->getId() . " - " . $resError->getMessage();
-                    }
-
-                    $this->itemFailed($item, new Exception(implode(',', $this->errors)));
+                if (isset($response['failed'][$item->getId()])) {
+                    $error = $response['failed'][$item->getId()]['error'] ?? 'Unknown error';
+                    $this->itemFailed($item, new Exception($error));
                 } else {
                     $this->itemDeleted($item);
                 }
@@ -567,66 +526,52 @@ class Synchronizer
     /**
      * Process batch insert response.
      *
-     * Update expiration dates or collect errors.
+    
      *
-     * @param ProductInput $response
+     * @param array|null $response
      */
     protected function processBatchInsertResponse($response)
     {
-        $resEntries = [];
-        if ($response) { // update expiration dates or collect errors
-            foreach ($response->getEntries() as $batchEntry) {
-                $resEntries[$batchEntry->getBatchId()] = $batchEntry;
+        if (!is_array($response)) {
+            return;
+        }
+
+        foreach ($this->batchInsertItems as $item) {
+            $itemId = $item->getId();
+
+            if (isset($response['failed'][$itemId])) {
+                $error = $response['failed'][$itemId]['error'] ?? 'Unknown error';
+                $this->totalFailed++;
+                $this->errors[] = $itemId . " - " . $error;
+                $this->itemFailed($item, new Exception($error));
+            } elseif (isset($response['success'][$itemId])) {
+
+                /** @var ProductInput $insertedProduct */
+                $insertedProduct = $response['success'][$itemId];
+
+
+                $googleContentId = $insertedProduct->getName();
+
+                $expires = $this->googleHelper->getTimeZone()
+                    ->date()
+                    ->modify('+ 30 days')
+                    ->format('Y:m:d H:i:s');
+
+                $item->setExpiryDate($expires);
+                $item->setGoogleContentId($googleContentId);
+                $this->itemUpdated($item);
+            } else {
+                $this->errors[]  = $itemId . " - missing response";
+                $this->itemFailed($item, new Exception($itemId . " - missing response"));
             }
 
-            foreach ($this->batchInsertItems as $item) {
-                if (!isset($resEntries[$item->getId()])
-                    || !is_a(
-                        $resEntries[$item->getId()],
-                        ProductInput::class
-                    )
-                ) {
-                    $this->errors[] = $item->getId() . " - missing response" . "\n";
-                    $this->itemFailed($item, new Exception($item->getId() . " - missing response"));
-                    $this->productsRepository->save($item);
-                    continue;
-                }
-
-                if ($resErrors = $resEntries[$item->getId()]->getErrors()) {
-                    foreach ($resErrors->getErrors() as $resError) {
-                        $this->totalFailed++;
-                        $this->errors[] = $item->getId() . " - " . $resError->getMessage();
-                    }
-
-                    $this->itemFailed($item, new Exception(implode(',', $this->errors)));
-                } else {
-                    $expires = null;
-                    if ($resEntries[$item->getId()]->getProduct()->getExpirationDate()) {
-                        $expires = $this->googleHelper->convertContentDateToTimestamp(
-                            $resEntries[$item->getId()]->getProduct()->getExpirationDate()
-                        );
-                    }
-                    if (!$expires) {
-                        $expires = $this->googleHelper->getTimeZone()
-                            ->date()
-                            ->modify('+ 30 days')
-                            ->format('Y:m:d H:i:s');
-                    }
-
-                    $item->setExpiryDate($expires);
-                    $item->setGoogleContentId($resEntries[$item->getId()]->getProduct()->getId());
-                    $this->itemUpdated($item);
-                }
-
-                $item->setLastUpdatedToGoogle($this->googleHelper->getCurrentDateAndTime());
-                $this->productsRepository->save($item);
-            }
+            $item->setLastUpdatedToGoogle($this->googleHelper->getCurrentDateAndTime());
+            $this->productsRepository->save($item);
         }
     }
 
     /**
-     * Determine item delete or update,
-     *
+     * Determine item delete or update.
      * If delete return false else true.
      *
      * @param ProductsInterface $item
@@ -634,15 +579,11 @@ class Synchronizer
      */
     protected function itemDeleteOrUpdate($item)
     {
-        $result = true;
+        $result         = true;
         $removeInactive = (bool)$this->googleHelper->getConfig()->getAutoRemoveDisabled($item->getProductStoreId());
-        $productStockItem = $item->getProduct()->getExtensionAttributes()->getStockItem();
-        $productStockStatus = $productStockItem ? (bool)$productStockItem->getIsInStock() : true;
-        $productStatus = $item->getProduct()->getStatus();
+        $productStatus  = $item->getProduct()->getStatus();
 
-        if ($removeInactive
-            && ($productStatus == Status::STATUS_DISABLED)
-        ) {
+        if ($removeInactive && ($productStatus == Status::STATUS_DISABLED)) {
             $result = false;
         }
 
@@ -650,9 +591,7 @@ class Synchronizer
     }
 
     /**
-     * Get all child product from configurable and get child items from queue,
-     *
-     * Set parent product in it and apply filter conditions
+     * Get all child product from configurable and get child items from queue
      *
      * @param ProductsInterface $item
      * @return ProductsInterface[]|[]
@@ -660,8 +599,9 @@ class Synchronizer
     protected function getAllChildProductsAsItem($item)
     {
         /** @var ProductInterface[] $childProducts */
-        $childProducts = $item->getProduct()->getTypeInstance()->getUsedProducts($item->getProduct());
+        $childProducts    = $item->getProduct()->getTypeInstance()->getUsedProducts($item->getProduct());
         $productChildItems = [];
+
         if (!empty($childProducts)) {
             $childProductsIds = [];
             foreach ($childProducts as $childProduct) {
@@ -673,6 +613,7 @@ class Synchronizer
                 array_keys($childProductsIds),
                 $this->storeId
             );
+
             if (count($this->productsIds) != count(array_keys($childProductsIds))) {
                 $childItemsFromQueue = $this->getAllChildItemsFromQueue(
                     array_keys($childProductsIds),
@@ -698,18 +639,20 @@ class Synchronizer
      * Get all child products of a configurable product from queue
      *
      * @param array $childProductIds
-     * @param int $storeId
+     * @param int   $storeId
      * @return ProductSearchResultInterface
      */
     protected function getAllChildItemsFromQueue($childProductIds, $storeId)
     {
-        return $this->productsRepository->getList($this->getProductSearchCriteria($storeId, false, $childProductIds));
+        return $this->productsRepository->getList(
+            $this->getProductSearchCriteria($storeId, false, $childProductIds)
+        );
     }
 
     /**
-     * Return products search result  for store
+     * Return products search result for store
      *
-     * @param int $storeId
+     * @param int  $storeId
      * @param bool $isBatch
      * @return ProductSearchResultInterface|null
      */
@@ -719,14 +662,13 @@ class Synchronizer
             return null;
         }
 
-        return $this->productsRepository
-            ->getList($this->getProductSearchCriteria($storeId, $isBatch));
+        return $this->productsRepository->getList($this->getProductSearchCriteria($storeId, $isBatch));
     }
 
     /**
-     * Return skipped / error products search result  for store
+     * Return skipped / error products search result for store
      *
-     * @param int $storeId
+     * @param int  $storeId
      * @param bool $isBatch
      * @return ProductSearchResultInterface|null
      */
@@ -736,61 +678,56 @@ class Synchronizer
             return null;
         }
 
-        return $this->productsRepository
-            ->getList($this->getProductSearchCriteriaForMissingProducts($storeId, $isBatch));
+        return $this->productsRepository->getList(
+            $this->getProductSearchCriteriaForMissingProducts($storeId, $isBatch)
+        );
     }
 
     /**
      * Get search criteria
      *
-     * @param int $storeId
-     * @param bool $isBatch
+     * @param int   $storeId
+     * @param bool  $isBatch
      * @param array $productIds
      * @return SearchCriteria
      */
     protected function getProductSearchCriteria($storeId, $isBatch = false, $productIds = [])
     {
-        $cronFrequency = $this->googleHelper->getConfig()->getCronFrequency($storeId);
-        $noOfDaysTOAdd =  $this->product->getItemRenewNoOfDays()[$cronFrequency];
+        $cronFrequency              = $this->googleHelper->getConfig()->getCronFrequency($storeId);
+        $noOfDaysTOAdd              = $this->product->getItemRenewNoOfDays()[$cronFrequency];
         $productExpiryUpToDateToUpdate = $this->googleHelper->getTimeZone()
             ->date()
             ->modify('+' . $noOfDaysTOAdd . ' days')
             ->format('Y-m-d H:i:s');
 
         $statusFilter = $this->filterBuilder->setField(ProductsInterface::STATUS)
-            ->setValue(
-                [
-                    ProductsInterface::READY_TO_UPDATE_STATUS
-                ]
-            )
+            ->setValue([ProductsInterface::READY_TO_UPDATE_STATUS])
             ->setConditionType('in')
             ->create();
+
         $expiryDateFilter = $this->filterBuilder->setField(ProductsInterface::EXPIRY_DATE)
             ->setValue($productExpiryUpToDateToUpdate)
             ->setConditionType('lteq')
             ->create();
+
         $statusOrExpiryDate = $this->filterGroupBuilder
             ->addFilter($statusFilter)
             ->addFilter($expiryDateFilter)
             ->create();
+
         if ($isBatch) {
             $batchSizeConfig = $this->googleHelper->getConfig()->getBatchSize();
-            $batchSize = $batchSizeConfig ? (int)$batchSizeConfig
+            $batchSize       = $batchSizeConfig
+                ? (int)$batchSizeConfig
                 : ProductsInterface::DEFAULT_BATCH_SIZE_FOR_BATCH_IMPORT;
             $this->searchCriteriaBuilder->setPageSize($batchSize);
         }
 
         $this->searchCriteriaBuilder->setFilterGroups([$statusOrExpiryDate])
-            ->addFilter(
-                ProductsInterface::STORE_ID,
-                $storeId
-            );
+            ->addFilter(ProductsInterface::STORE_ID, $storeId);
+
         if ($productIds) {
-            $this->searchCriteriaBuilder->addFilter(
-                ProductsInterface::PRODUCT_ID,
-                $productIds,
-                'in'
-            );
+            $this->searchCriteriaBuilder->addFilter(ProductsInterface::PRODUCT_ID, $productIds, 'in');
         }
 
         $sortOrder = $this->sortOrderBuilder->setField('type_id')->setAscendingDirection()->create();
@@ -799,57 +736,50 @@ class Synchronizer
     }
 
     /**
-     * Get search criteria For Missing Items
+     * Get search criteria for missing items
      *
-     * @param int $storeId
-     * @param bool $isBatch
+     * @param int   $storeId
+     * @param bool  $isBatch
      * @param array $productIds
      * @return SearchCriteria
      */
     protected function getProductSearchCriteriaForMissingProducts($storeId, $isBatch = false, $productIds = [])
     {
-        $cronFrequency = $this->googleHelper->getConfig()->getCronFrequency($storeId);
-        $noOfDaysTOAdd =  $this->product->getItemRenewNoOfDays()[$cronFrequency];
+        $cronFrequency              = $this->googleHelper->getConfig()->getCronFrequency($storeId);
+        $noOfDaysTOAdd              = $this->product->getItemRenewNoOfDays()[$cronFrequency];
         $productExpiryUpToDateToUpdate = $this->googleHelper->getTimeZone()
             ->date()
             ->modify('+' . $noOfDaysTOAdd . ' days')
             ->format('Y-m-d H:i:s');
 
         $statusFilter = $this->filterBuilder->setField(ProductsInterface::STATUS)
-            ->setValue(
-                [
-                    ProductsInterface::FAILED_STATUS,
-                    ProductsInterface::SKIPPED_STATUS
-                ]
-            )
+            ->setValue([ProductsInterface::FAILED_STATUS, ProductsInterface::SKIPPED_STATUS])
             ->setConditionType('in')
             ->create();
+
         $expiryDateFilter = $this->filterBuilder->setField(ProductsInterface::EXPIRY_DATE)
             ->setValue($productExpiryUpToDateToUpdate)
             ->setConditionType('lteq')
             ->create();
+
         $statusOrExpiryDate = $this->filterGroupBuilder
             ->addFilter($statusFilter)
             ->addFilter($expiryDateFilter)
             ->create();
+
         if ($isBatch) {
             $batchSizeConfig = $this->googleHelper->getConfig()->getBatchSize();
-            $batchSize = $batchSizeConfig ? (int)$batchSizeConfig
+            $batchSize       = $batchSizeConfig
+                ? (int)$batchSizeConfig
                 : ProductsInterface::DEFAULT_BATCH_SIZE_FOR_BATCH_IMPORT;
             $this->searchCriteriaBuilder->setPageSize($batchSize);
         }
 
         $this->searchCriteriaBuilder->setFilterGroups([$statusOrExpiryDate])
-            ->addFilter(
-                ProductsInterface::STORE_ID,
-                $storeId
-            );
+            ->addFilter(ProductsInterface::STORE_ID, $storeId);
+
         if ($productIds) {
-            $this->searchCriteriaBuilder->addFilter(
-                ProductsInterface::PRODUCT_ID,
-                $productIds,
-                'in'
-            );
+            $this->searchCriteriaBuilder->addFilter(ProductsInterface::PRODUCT_ID, $productIds, 'in');
         }
 
         $sortOrder = $this->sortOrderBuilder->setField('type_id')->setAscendingDirection()->create();
@@ -874,15 +804,15 @@ class Synchronizer
     }
 
     /**
-     * Get items after filter apply skip items match filter
+     * Get items after filter apply — skip items matching filter
      *
      * @param ProductsInterface[] $items
-     * @return array|ProductsInterface[]
+     * @return array
      */
     protected function getItemsAfterFilterApply($items)
     {
         $productItems = [];
-        $itemCount = 0;
+        $itemCount    = 0;
         foreach ($items as $item) {
             if (in_array($item->getProductId(), $this->productsIds)) {
                 $this->itemSkipped($item);
@@ -904,12 +834,15 @@ class Synchronizer
      */
     public function getLastUpdatedDateOfProduct()
     {
-        $sortOrder = ObjectManager::getInstance()->create(SortOrderBuilder::class)->setField('updated_date')
+        $sortOrder = ObjectManager::getInstance()->create(SortOrderBuilder::class)
+            ->setField('updated_date')
             ->setDirection('DESC')
             ->create();
+
         $searchCriteria = $this->searchCriteriaBuilder->setSortOrders([$sortOrder])->setPageSize(1)->create();
-        $items = $this->productsRepository->getList($searchCriteria)->getItems();
-        $date = strtotime('now');
+        $items          = $this->productsRepository->getList($searchCriteria)->getItems();
+        $date           = strtotime('now');
+
         foreach ($items as $item) {
             $date = strtotime($item->getUpdatedDate());
         }
@@ -957,10 +890,10 @@ class Synchronizer
     }
 
     /**
-     * Set item Failed
+     * Set item failed
      *
-     * @param ProductsInterface $item
-     * @param Exception|LocalizedException $exception
+     * @param ProductsInterface                    $item
+     * @param Exception|LocalizedException         $exception
      */
     protected function itemFailed($item, $exception)
     {
@@ -1002,12 +935,14 @@ class Synchronizer
             $failedProducts = isset($this->itemsFailed[$this->storeId])
                 ? array_values($this->itemsFailed[$this->storeId])
                 : [];
+
             $message = sprintf(
                 __('Cannot update %s products for store %s. failed products Ids: %s'),
                 $this->totalFailed,
                 $this->storeId,
                 implode("\n", $failedProducts)
             );
+
             array_unshift($this->errors, $message);
             $this->getLogger()->addMajor(
                 sprintf(
@@ -1042,7 +977,7 @@ class Synchronizer
                 ) . "</br>";
         }
 
-        if ($this->totalUpdated > 0 && isset($this->itemsSkipped[$this->storeId])) {
+        if ($this->totalUpdated > 0 && isset($this->itemsUpdated[$this->storeId])) {
             $message[] = sprintf(__('Total of %s product(s) have been updated'), $this->totalUpdated);
             $message[] = sprintf(
                     __('Products updated are: %s'),
@@ -1058,36 +993,41 @@ class Synchronizer
             $message,
             $this->storeId
         );
-        //file logger
     }
 
     /**
-     * Add item to multiple target country
+     * Add item to multiple target country batch
      *
      * @param ProductsInterface $product
-     * @param AttributeMapType $currentAttributeMapType
+     * @param AttributeMapType  $currentAttributeMapType
      */
     protected function addMultipleTargetCountryItemsToBatch($product, $currentAttributeMapType)
     {
-        $registry = $this->registry->registry(Product::TYPES_REGISTRY_KEY);
+        $registry      = $this->registry->registry(Product::TYPES_REGISTRY_KEY);
         $targetCountry = $this->googleShopping->getGoogleHelper()
             ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
-        $updatedCountry = [];
+
+        $updatedCountry   = [];
         $updatedCountry[] = $currentAttributeMapType->getTargetCountry();
+
         if (is_array($registry) && isset($registry[$product->getProductStoreId()])) {
             $attributeTypes = $registry[$product->getProductStoreId()];
             array_shift($attributeTypes);
+
             if (count($attributeTypes) > 0) {
-                foreach ($attributeTypes as $targetCountry => $attributeMap) {
+                foreach ($attributeTypes as $country => $attributeMap) {
                     /** @var AttributeMapType $attributeMap */
-                    if ($targetCountry !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($targetCountry, $updatedCountry)
+                    if ($country !== $currentAttributeMapType->getTargetCountry()
+                        && !in_array($country, $updatedCountry)
                     ) {
-                        $item = $attributeMap->convertAttributes($product);
+                        /** @var ProductInput $productInput */
+                        $productInput  = $attributeMap->convertAttributes($product);
                         $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
-                        $this->batchInsertProducts[$product->getProductStoreId()][$item->getId() . $batchIdSuffix]
-                            = $item;
-                        $updatedCountry[] = $targetCountry;
+
+                        $this->batchInsertProducts[$product->getProductStoreId()]
+                        [$product->getId() . $batchIdSuffix] = $productInput;
+
+                        $updatedCountry[] = $country;
                     }
                 }
 
@@ -1100,10 +1040,14 @@ class Synchronizer
                             $newAttributeMap->setId(null)
                                 ->setTargetCountry($country)
                                 ->setStoreId($product->getProductStoreId());
-                            $item = $newAttributeMap->convertAttributes($product);
+
+                            /** @var ProductInput $productInput */
+                            $productInput  = $newAttributeMap->convertAttributes($product);
                             $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
-                            $this->batchInsertProducts[$product->getProductStoreId()][$item->getId() . $batchIdSuffix]
-                                = $item;
+
+                           
+                            $this->batchInsertProducts[$product->getProductStoreId()]
+                            [$product->getId() . $batchIdSuffix] = $productInput;
                         }
                     }
                 }
@@ -1116,11 +1060,14 @@ class Synchronizer
                         $newAttributeMap->setId(null)
                             ->setTargetCountry($country)
                             ->setStoreId($product->getProductStoreId());
-                        $item = $newAttributeMap->convertAttributes($product);
+
+                        /** @var ProductInput $productInput */
+                        $productInput  = $newAttributeMap->convertAttributes($product);
                         $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
 
-                        $this->batchInsertProducts[$product->getProductStoreId()][$item->getId() . $batchIdSuffix]
-                            = $item;
+
+                        $this->batchInsertProducts[$product->getProductStoreId()]
+                        [$product->getId() . $batchIdSuffix] = $productInput;
                     }
                 }
             }
@@ -1128,37 +1075,40 @@ class Synchronizer
     }
 
     /**
-     * Delete item from all target country.
+     * Delete item from all target countries
      *
      * @param ProductsInterface $item
      */
     protected function deleteItemFromAllTargetCountries($item)
     {
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()->getConfig()->getEnabledTargetCountry(
-            $item->getProductStoreId()
-        );
-        $googleProductId = $item->getGoogleContentId();
+        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()
+            ->getConfig()->getEnabledTargetCountry($item->getProductStoreId());
+
+        $originalGoogleProductId = $item->getGoogleContentId(); 
+
         foreach ($enabledTargetCountryList as $enabledCountry) {
             try {
+                $googleProductId = $originalGoogleProductId; 
                 preg_match('([a-z]{2}:([A-Z]{2,6}))', $googleProductId, $matches);
                 if ($matches) {
                     $languageCountry = explode(':', $matches[0]);
-                    $language = $languageCountry[0];
-                    $replacement = $language . ':' . $enabledCountry;
+                    $language        = $languageCountry[0];
+                    $replacement     = $language . ':' . $enabledCountry;
                     $googleProductId = preg_replace('/([a-z]{2}):([A-Z]{2,6})/', $replacement, $googleProductId);
                 }
 
                 $googleProduct = $this->googleShopping->getProduct($googleProductId, $item->getProductStoreId());
-                if ($googleProduct && $googleProduct->getId()) {
+
+                if ($googleProduct && $googleProduct->getName()) {
                     $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
-                    $this->batchDeleteProducts[$item->getProductStoreId()][$item->getId() . $batchIdSuffix]
-                        = $googleProductId;
+                    $this->batchDeleteProducts[$item->getProductStoreId()]
+                    [$item->getId() . $batchIdSuffix] = $googleProductId;
+
+                    $this->googleHelper->writeDebugLogFile('Queued delete for country: ' . $enabledCountry . ' => ' . $googleProductId);
                 }
             } catch (ApiException $exception) {
                 if ($exception->getCode() == 404) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'Product not found for: ' . $googleProductId
-                    );
+                    $this->googleHelper->writeDebugLogFile('Product not found for: ' . $googleProductId);
                 }
             } catch (Exception $exception) {
                 $this->googleHelper->writeDebugLogFile($exception);

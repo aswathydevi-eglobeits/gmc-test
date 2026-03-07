@@ -11,7 +11,7 @@
 namespace Egits\GoogleMerchantApi\Controller\Adminhtml\Test;
 
 use Egits\GoogleMerchantApi\Model\GoogleShopping;
-use Google\Shopping\Merchant\Accounts\V1\AccountsServiceClient;
+use Google\Shopping\Merchant\Products\V1\Client\ProductsServiceClient;
 use Magento\Backend\App\Action;
 use Magento\Framework\Controller\Result\JsonFactory;
 
@@ -60,17 +60,15 @@ class Index extends Action
         $status = ['error' => true, 'message' => __('Test Connection failed')];
         $storeId = $this->getRequest()->getParam('store', 0);
         try {
-            if (class_exists('Google\Shopping\Merchant\Accounts\V1\AccountsServiceClient')) {
-                $shoppingService = $this->googleShopping->setStore($storeId)->getShoppingService();
-                if ($shoppingService instanceof AccountsServiceClient) {
-                    $status = ['error' => false, 'message' => __('Connection Successful')];
-                }
+            $shoppingService = $this->googleShopping->setStore($storeId)->getShoppingService();
+            if ($shoppingService instanceof ProductsServiceClient) {
+                $status = ['error' => false, 'message' => __('Connection Successful')];
             } else {
                 $status = ['error' => true, 'message' => __('Test Connection failed')];
             }
         } catch (\Exception $e) {
             $this->googleShopping->getGoogleHelper()->writeDebugLogFile($e);
-            $status = ['error' => true, 'message' => __('Test Connection failed')];
+            $status = ['error' => true, 'message' => $e->getMessage()];
         }
 
         return $result->setData($status);

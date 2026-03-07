@@ -64,7 +64,7 @@ class Base extends DataObject implements AttributeInterface
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
     {
         if (!$this->getName()) {
             return $shoppingProduct;

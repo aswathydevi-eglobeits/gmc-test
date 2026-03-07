@@ -68,7 +68,7 @@ class ProductType extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $value = 'Home';
         $categoryIds = $product->getCategoryIds();
@@ -84,7 +84,8 @@ class ProductType extends Base
 
         // Still no categories found after checking parent
         if (empty($categoryIds)) {
-            $shoppingProduct->setProductTypes([$value]);
+            $googleAttributes->setProductTypes([$value]);
+        $shoppingProduct->setProductAttributes($googleAttributes);
             return $shoppingProduct;
         }
 
@@ -148,7 +149,8 @@ class ProductType extends Base
         } else {
             $value = $typeValue;
         }
-        $shoppingProduct->setProductTypes([$value]);
+        $googleAttributes->setProductTypes([$value]);
+        $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
 }

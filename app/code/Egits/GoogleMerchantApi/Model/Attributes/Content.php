@@ -22,7 +22,7 @@ class Content extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $mapValue = $this->getProductAttributeValue($product);
         $description = $this->getGroupAttributeDescription();
@@ -56,7 +56,8 @@ class Content extends Base
 
         $descriptionText = $this->googleHelper->cleanAtomAttribute($descriptionText);
         $descriptionText = $this->googleHelper->getEscaper()->escapeHtml($descriptionText);
-        $shoppingProduct->setDescription($descriptionText);
+        $googleAttributes->setDescription($descriptionText);
+        $shoppingProduct->setProductAttributes($googleAttributes);
 
         return $shoppingProduct;
     }

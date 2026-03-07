@@ -23,12 +23,14 @@ use Google\Shopping\Merchant\Products\V1\ProductInput;
  */
 class Availability extends Base
 {
+    const OUT_OF_STOCK = 0 ;
+    const IN_STOCK = 1 ;
     /**
      * @var array
      */
     protected $googleAvailabilityMap = [
-        0 => 'out_of_stock',
-        1 => 'in_stock'
+        0 => Availability::OUT_OF_STOCK,
+        1 => Availability::IN_STOCK
     ];
 
     /**
@@ -57,7 +59,7 @@ class Availability extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
     {
         $stockItem = $this->stockRegistryProvider->getStockItem(
             $product->getId(),
@@ -66,7 +68,8 @@ class Availability extends Base
         $isAvailable = (int) $stockItem->getIsInStock();
 
         $value = $this->googleAvailabilityMap[$isAvailable];
-        $shoppingProduct->setAvailability($value);
+        $googleAttributes->setAvailability($value);
+        $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
 }
