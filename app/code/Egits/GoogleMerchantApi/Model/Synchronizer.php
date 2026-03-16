@@ -244,6 +244,7 @@ class Synchronizer
         $this->resetBatchState();
 
         $items = $this->getMissingItemsByStore($storeId, true);
+        $this->googleHelper->writeDebugLogFile('total itemcount', $items->getTotalCount());
         if ($items->getTotalCount() > 0) {
             $this->productsIds = $this->productValidator->getFilterMatchingProducts(
                 $this->getAllProductIds($items->getItems()),
@@ -327,6 +328,7 @@ class Synchronizer
         $storeId = $this->storeId;
         $this->prepareItemsForBatchSynchronization($copy);
 
+        // INSERT
         if (!empty($this->batchInsertProducts[$storeId])) {
             $result = null;
             try {
@@ -364,6 +366,10 @@ class Synchronizer
         $this->logSynchronization();
         return $this;
     }
+
+    // =========================================================================
+    // Batch preparation
+    // =========================================================================
 
     /**
      * Prepare items for batch synchronization
@@ -425,7 +431,7 @@ class Synchronizer
 
                     $this->batchInsertProducts[$item->getProductStoreId()][$item->getId()] = $productInput;
                     $this->batchInsertItems[] = $item;
-                    $this->addMultipleTargetCountryItemsToBatch($item, $attributeMap);
+                    $this->addMultipleTargetCountryItemsToBatch($item, $attributeMap); // FIX 4
                 }
             } catch (LocalizedException $e) {
                 $this->itemFailed($item, $e);
@@ -481,7 +487,7 @@ class Synchronizer
      * Process batch delete response
      *
      * @param array|null          $response
-     * @param ProductsInterface[] $deleteItemsMap [itemId => item]
+     * @param ProductsInterface[] $deleteItemsMap  [itemId => item] — filtered to current store
      */
     protected function processBatchDeleteResponse($response, array $deleteItemsMap = [])
     {

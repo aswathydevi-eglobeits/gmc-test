@@ -81,7 +81,6 @@ class Base extends DataObject implements AttributeInterface
         $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
-
     /**
      * Get current attribute value for specified product
      *

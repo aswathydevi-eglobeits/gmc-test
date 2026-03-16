@@ -10,7 +10,8 @@
 
 namespace Egits\GoogleMerchantApi\Model;
 
-use Egits\GoogleMerchantApi\Api\LogRepositoryInterface;
+use Egits\GoogleMerchantApi\Api\Data\ProductsInterface;
+use Egits\GoogleMerchantApi\Api\ProductsRepositoryInterface;
 use Egits\GoogleMerchantApi\Helper\GoogleConfig;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Google\ApiCore\ApiException;
@@ -23,40 +24,82 @@ use Google\Shopping\Merchant\Products\V1\ListProductsRequest;
 use Google\Shopping\Merchant\Products\V1\ProductInput;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
 use GuzzleHttp\Promise\PromiseInterface;
-use GuzzleHttp\Promise\FulfilledPromise;
-use GuzzleHttp\Promise\RejectedPromise;
 use Magento\Framework\Filesystem\Driver\File;
 
 /**
  * Class GoogleShopping
- * Class interact with google api library
- * All operations are async (non-blocking) — callers receive PromiseInterface
+ * Handles all Google Merchant API interactions including batch operations.
  */
 class GoogleShopping
 {
     public const APP_NAME = 'Magento 2 Shopping';
     public const SCOPE    = 'https://www.googleapis.com/auth/merchantapi';
 
+    /**
+     * @var GoogleHelper
+     */
     protected $googleHelper;
+
+    /**
+     * @var \Google\Client
+     */
     protected $client;
+
+    /**
+     * @var GoogleConfig
+     */
     private $googleConfig;
+
+    /**
+     * @var ProductInputsServiceClient
+     */
     protected $productInputsClient;
+
+    /**
+     * @var ProductsServiceClient
+     */
     protected $productsClient;
+
+    /**
+     * @var string
+     */
     private $serviceAccountJsonFile;
+
+    /**
+     * @var int
+     */
     protected $storeId;
+
+    /**
+     * @var File
+     */
     protected $fileDriver;
 
-    public function __construct(GoogleHelper $googleHelper, File $fileDriver)
-    {
+    /**
+     * @var ProductsRepositoryInterface
+     */
+    private $productsRepository;
+
+    /**
+     * @param GoogleHelper                $googleHelper
+     * @param File                        $fileDriver
+     * @param ProductsRepositoryInterface $productsRepository
+     */
+    public function __construct(
+        GoogleHelper $googleHelper,
+        File $fileDriver,
+        ProductsRepositoryInterface $productsRepository
+    ) {
         $this->googleHelper           = $googleHelper;
-        $this->serviceAccountJsonFile = $this->googleHelper->getConfig()->getAccountJsonFullFilePath();
         $this->fileDriver             = $fileDriver;
+        $this->productsRepository     = $productsRepository;
+        $this->serviceAccountJsonFile = $this->googleHelper->getConfig()->getAccountJsonFullFilePath();
     }
 
-    // -------------------------------------------------------------------------
-    // Client Initialization
-    // -------------------------------------------------------------------------
 
+    /**
+     * @return \Google\Client
+     */
     public function getClient()
     {
         if ($this->storeId) {
@@ -72,7 +115,7 @@ class GoogleShopping
             return $this->client;
         }
 
-        $client = new \Google_Client();
+        $client = new \Google\Client();
         $client->setApplicationName(self::APP_NAME);
         $client->setAuthConfig($this->serviceAccountJsonFile);
         $client->setScopes([self::SCOPE]);
@@ -89,6 +132,9 @@ class GoogleShopping
         return $this->client;
     }
 
+    /**
+     * @return ProductInputsServiceClient|null
+     */
     public function getProductInputsClient()
     {
         if (isset($this->productInputsClient)) {
@@ -105,12 +151,14 @@ class GoogleShopping
                 );
             }
         } catch (\Exception $exception) {
-            $this->googleHelper->writeDebugLogFile($exception);
         }
 
         return $this->productInputsClient;
     }
 
+    /**
+     * @return ProductsServiceClient|null
+     */
     public function getShoppingService()
     {
         if (isset($this->productsClient)) {
@@ -127,35 +175,26 @@ class GoogleShopping
                 );
             }
         } catch (\Exception $exception) {
-            $this->googleHelper->writeDebugLogFile($exception);
         }
 
         return $this->productsClient;
     }
 
-    // -------------------------------------------------------------------------
-    // Insert — Async
-    // -------------------------------------------------------------------------
+
 
     /**
-     * Insert single product — Async (Non-blocking)
-     * Returns PromiseInterface — caller can ->wait() or fire-and-forget
-     *
-     * Used by: Service/Product.php->insert()
+     * Insert single product.
      *
      * @param ProductInput $productInput
-     * @param int|null $storeId
-     * @return PromiseInterface
+     * @param int|null     $storeId
+     * @return mixed
      */
-    public function insertProduct(ProductInput $productInput, $storeId = null): PromiseInterface
+    public function insertProduct(ProductInput $productInput, $storeId = null)
     {
         $this->setStore($storeId);
 
         $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
         $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
-
-        $this->googleHelper->writeDebugLogFile('insertProduct accountId: ' . $accountId);
-        $this->googleHelper->writeDebugLogFile('insertProduct dataSourceId: ' . $dataSourceId);
 
         $request = new InsertProductInputRequest();
         $request->setParent("accounts/{$accountId}");
@@ -163,41 +202,137 @@ class GoogleShopping
         $request->setDataSource("accounts/{$accountId}/dataSources/{$dataSourceId}");
 
         try {
-            $promise = $this->getProductInputsClient()->insertProductInputAsync($request);
-
-            return $promise->then(
-                function ($response) use ($productInput) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'insertProduct success: ' . $productInput->getName()
-                    );
-                    return $response;
-                },
-                function ($reason) use ($productInput) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'insertProduct failed: ' . $productInput->getName() . ' | Error: ' . $reason
-                    );
-                    return new RejectedPromise($reason);
-                }
-            );
+            return $this->getProductInputsClient()->insertProductInput($request);
         } catch (\Exception $e) {
-            $this->googleHelper->writeDebugLogFile($e);
-            return new RejectedPromise($e);
+            throw $e;
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Batch Insert — Async Parallel
-    // -------------------------------------------------------------------------
+    /**
+     * Update single product — upsert via insert.
+     *
+     * @param ProductInput $productInput
+     * @param int|null     $storeId
+     * @return mixed
+     */
+    public function updateProduct(ProductInput $productInput, $storeId = null)
+    {
+        return $this->insertProduct($productInput, $storeId);
+    }
 
     /**
-     * Product batch insert — Parallel Async
-     * Used by: BatchProcessor->batchInsert()
+     * Delete single product.
+     *
+     * @param string   $name
+     * @param int|null $storeId
+     * @return void
+     */
+    public function deleteProduct($name, $storeId = null)
+    {
+        $this->setStore($storeId);
+
+        $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+        $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
+        $dataSource   = "accounts/{$accountId}/dataSources/{$dataSourceId}";
+
+        $request = new DeleteProductInputRequest([
+            'name'        => $name,
+            'data_source' => $dataSource,
+        ]);
+
+        $this->getProductInputsClient()->deleteProductInput($request);
+    }
+
+    /**
+     * Get single product from Google.
+     *
+     * @param string   $productId
+     * @param int|null $storeId
+     * @return mixed
+     */
+    public function getProduct($productId, $storeId = null)
+    {
+        $this->setStore($storeId);
+
+        if (strpos($productId, 'accounts/') === 0) {
+            $name = $productId;
+        } else {
+            $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+            $name      = "accounts/{$accountId}/products/{$productId}";
+        }
+
+        $request = new GetProductRequest();
+        $request->setName($name);
+
+        return $this->getShoppingService()->getProduct($request);
+    }
+
+    /**
+     * List all products from Google.
+     *
+     * @param int|null $storeId
+     * @return mixed
+     */
+    public function listProducts($storeId = null)
+    {
+        $this->setStore($storeId);
+
+        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
+
+        $request = new ListProductsRequest();
+        $request->setParent("accounts/{$accountId}");
+
+        return $this->getShoppingService()->listProducts($request);
+    }
+
+
+    /**
+     * Batch insert — parallel async, updates DB status.
+     *
+     * @param ProductInput[]      $products [itemId => ProductInput]
+     * @param ProductsInterface[] $items    [itemId => ProductsInterface]
+     * @param int|null            $storeId
+     * @return void
+     */
+    public function batchInsert(array $products, array $items, $storeId = null): void
+    {
+        if (empty($products)) {
+            return;
+        }
+
+        $response = $this->productBatchInsert($products, $storeId);
+        $this->processBatchInsertResponse($response, $items);
+    }
+
+
+    /**
+     * Batch delete — parallel async, updates DB status.
+     *
+     * @param array               $productIds [itemId => googleContentId]
+     * @param ProductsInterface[] $items      [itemId => ProductsInterface]
+     * @param int|null            $storeId
+     * @return void
+     */
+    public function batchDelete(array $productIds, array $items, $storeId = null): void
+    {
+        if (empty($productIds)) {
+            return;
+        }
+
+        $response = $this->productBatchDelete($productIds, $storeId);
+        $this->processBatchDeleteResponse($response, $items);
+    }
+
+
+    /**
+     * Low-level parallel async insert.
+     * Also used directly by Synchronizer (raw batch, no DB update).
      *
      * @param ProductInput[] $products [itemId => ProductInput]
-     * @param int|null $storeId
-     * @return PromiseInterface resolves to ['success' => [...], 'failed' => [...]]
+     * @param int|null       $storeId
+     * @return array ['success' => [...], 'failed' => [...]]
      */
-    public function productBatchInsert($products, $storeId = null): PromiseInterface
+    public function productBatchInsert($products, $storeId = null): array
     {
         $this->setStore($storeId);
 
@@ -206,6 +341,7 @@ class GoogleShopping
         $parent       = "accounts/{$accountId}";
         $dataSource   = "accounts/{$accountId}/dataSources/{$dataSourceId}";
 
+        $result   = ['success' => [], 'failed' => []];
         $promises = [];
 
         foreach ($products as $itemId => $productInput) {
@@ -218,116 +354,29 @@ class GoogleShopping
                 ->insertProductInputAsync($request);
         }
 
-        // Return a single promise that resolves when ALL complete
-        return PromiseUtils::settle($promises)->then(
-            function ($responses) {
-                $result = ['success' => [], 'failed' => []];
-
-                foreach ($responses as $itemId => $response) {
-                    if ($response['state'] === PromiseInterface::FULFILLED) {
-                        $result['success'][$itemId] = $response['value'];
-                        $this->googleHelper->writeDebugLogFile(
-                            'batchInsert success itemId: ' . $itemId
-                        );
-                    } else {
-                        $result['failed'][$itemId] = [
-                            'batchId' => $itemId,
-                            'error'   => (string)($response['reason'] ?? 'Unknown error'),
-                        ];
-                        $this->googleHelper->writeDebugLogFile(
-                            'batchInsert failed itemId: ' . $itemId . ' | Error: ' . ($response['reason'] ?? '')
-                        );
-                    }
-                }
-
-                return $result;
+        foreach (PromiseUtils::settle($promises)->wait() as $itemId => $response) {
+            if ($response['state'] === PromiseInterface::FULFILLED) {
+                $result['success'][$itemId] = $response['value'];
+            } else {
+                $result['failed'][$itemId] = [
+                    'batchId' => $itemId,
+                    'error'   => (string)($response['reason'] ?? 'Unknown error'),
+                ];
             }
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // Update — Async (upsert via insert)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Update single product — Async (same endpoint as insert — upsert)
-     * Returns PromiseInterface
-     *
-     * Used by: Service/Product.php->update()
-     *
-     * @param ProductInput $productInput
-     * @param int|null $storeId
-     * @return PromiseInterface
-     */
-    public function updateProduct(ProductInput $productInput, $storeId = null): PromiseInterface
-    {
-        return $this->insertProduct($productInput, $storeId);
-    }
-
-    // -------------------------------------------------------------------------
-    // Delete — Async
-    // -------------------------------------------------------------------------
-
-    /**
-     * Delete single product — Async (Non-blocking)
-     * Returns PromiseInterface — caller can ->wait() or fire-and-forget
-     *
-     * Used by: Service/Product.php->delete()
-     *
-     * @param string $name
-     * @param int|null $storeId
-     * @return PromiseInterface
-     */
-    public function deleteProduct($name, $storeId = null): PromiseInterface
-    {
-        $this->setStore($storeId);
-
-        $accountId    = $this->getConfig()->getGoogleMerchantAccountId($storeId);
-        $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
-        $dataSource   = "accounts/{$accountId}/dataSources/{$dataSourceId}";
-
-        $this->googleHelper->writeDebugLogFile('deleteProduct name: ' . $name);
-        $this->googleHelper->writeDebugLogFile('deleteProduct dataSource: ' . $dataSource);
-
-        $request = new DeleteProductInputRequest([
-            'name'        => $name,
-            'data_source' => $dataSource,
-        ]);
-
-        try {
-            $promise = $this->getProductInputsClient()->deleteProductInputAsync($request);
-
-            return $promise->then(
-                function ($response) use ($name) {
-                    $this->googleHelper->writeDebugLogFile('deleteProduct success: ' . $name);
-                    return $response;
-                },
-                function ($reason) use ($name) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'deleteProduct failed: ' . $name . ' | Error: ' . $reason
-                    );
-                    return new RejectedPromise($reason);
-                }
-            );
-        } catch (\Exception $e) {
-            $this->googleHelper->writeDebugLogFile($e);
-            return new RejectedPromise($e);
         }
+
+        return $result;
     }
 
-    // -------------------------------------------------------------------------
-    // Batch Delete — Async Parallel
-    // -------------------------------------------------------------------------
-
     /**
-     * Product batch delete — Parallel Async
-     * Used by: BatchProcessor->batchDelete()
+     * Low-level parallel async delete.
+     * Also used directly by Synchronizer (raw batch, no DB update).
      *
-     * @param array $googleContentIds [itemId => googleContentId]
+     * @param array    $googleContentIds [itemId => googleContentId]
      * @param int|null $storeId
-     * @return PromiseInterface resolves to ['success' => [...], 'failed' => [...]]
+     * @return array ['success' => [...], 'failed' => [...]]
      */
-    public function productBatchDelete($googleContentIds, $storeId = null): PromiseInterface
+    public function productBatchDelete($googleContentIds, $storeId = null): array
     {
         $this->setStore($storeId);
 
@@ -335,6 +384,7 @@ class GoogleShopping
         $dataSourceId = $this->getConfig()->getDataSourceId($storeId);
         $dataSource   = "accounts/{$accountId}/dataSources/{$dataSourceId}";
 
+        $result   = ['success' => [], 'failed' => []];
         $promises = [];
 
         foreach ($googleContentIds as $itemId => $googleContentId) {
@@ -347,140 +397,77 @@ class GoogleShopping
                 ->deleteProductInputAsync($request);
         }
 
-        // Return a single promise that resolves when ALL complete
-        return PromiseUtils::settle($promises)->then(
-            function ($responses) {
-                $result = ['success' => [], 'failed' => []];
+        foreach (PromiseUtils::settle($promises)->wait() as $itemId => $response) {
+            if ($response['state'] === PromiseInterface::FULFILLED) {
+                $result['success'][$itemId] = $response['value'];
+            } else {
+                $code = method_exists($response['reason'], 'getCode')
+                    ? $response['reason']->getCode()
+                    : 0;
 
-                foreach ($responses as $itemId => $response) {
-                    if ($response['state'] === PromiseInterface::FULFILLED) {
-                        $result['success'][$itemId] = $response['value'];
-                        $this->googleHelper->writeDebugLogFile(
-                            'batchDelete success itemId: ' . $itemId
-                        );
-                    } else {
-                        $code = method_exists($response['reason'], 'getCode')
-                            ? $response['reason']->getCode()
-                            : 0;
-
-                        // 404 — already deleted, skip silently
-                        if ($code !== 404) {
-                            $result['failed'][$itemId] = [
-                                'batchId' => $itemId,
-                                'error'   => (string)($response['reason'] ?? 'Unknown error'),
-                            ];
-                            $this->googleHelper->writeDebugLogFile(
-                                'batchDelete failed itemId: ' . $itemId . ' | Error: ' . ($response['reason'] ?? '')
-                            );
-                        }
-                    }
+                if ($code !== 404) {
+                    $result['failed'][$itemId] = [
+                        'batchId' => $itemId,
+                        'error'   => (string)($response['reason'] ?? 'Unknown error'),
+                    ];
                 }
-
-                return $result;
             }
-        );
+        }
+
+        return $result;
     }
 
-    // -------------------------------------------------------------------------
-    // Get Product — Async
-    // -------------------------------------------------------------------------
 
     /**
-     * Get single product from Google — Async
-     * Returns PromiseInterface
-     *
-     * Used by: Synchronizer->deleteItemFromAllTargetCountries()
-     *
-     * @param string $productId
-     * @param int|null $storeId
-     * @return PromiseInterface
+     * @param array               $response ['success' => [...], 'failed' => [...]]
+     * @param ProductsInterface[] $items    [itemId => ProductsInterface]
+     * @return void
      */
-    public function getProduct($productId, $storeId = null): PromiseInterface
+    private function processBatchInsertResponse(array $response, array $items): void
     {
-        $this->setStore($storeId);
+        foreach ($items as $itemId => $item) {
+            if (isset($response['failed'][$itemId])) {
+                $item->setStatus(ProductsInterface::FAILED_STATUS);
+            } elseif (isset($response['success'][$itemId])) {
+                $item->setGoogleContentId($response['success'][$itemId]->getName());
+                $item->setExpiryDate(
+                    $this->googleHelper->getTimeZone()
+                        ->date()
+                        ->modify('+30 days')
+                        ->format('Y:m:d H:i:s')
+                );
+                $item->setStatus(ProductsInterface::UPDATED_STATUS);
+            } else {
+                $item->setStatus(ProductsInterface::FAILED_STATUS);
+            }
 
-        if (strpos($productId, 'accounts/') === 0) {
-            $name = $productId;
-        } else {
-            $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
-            $name      = "accounts/{$accountId}/products/{$productId}";
-        }
-
-        $this->googleHelper->writeDebugLogFile('getProduct name: ' . $name);
-
-        $request = new GetProductRequest();
-        $request->setName($name);
-
-        try {
-            $promise = $this->getShoppingService()->getProductAsync($request);
-
-            return $promise->then(
-                function ($response) use ($name) {
-                    $this->googleHelper->writeDebugLogFile('getProduct success: ' . $name);
-                    return $response;
-                },
-                function ($reason) use ($name) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'getProduct failed: ' . $name . ' | Error: ' . $reason
-                    );
-                    return new RejectedPromise($reason);
-                }
-            );
-        } catch (\Exception $e) {
-            $this->googleHelper->writeDebugLogFile($e);
-            return new RejectedPromise($e);
+            $item->setLastUpdatedToGoogle($this->googleHelper->getCurrentDateAndTime());
+            $this->productsRepository->save($item);
         }
     }
-
-    // -------------------------------------------------------------------------
-    // List Products — Async
-    // -------------------------------------------------------------------------
 
     /**
-     * List all products from Google — Async
-     * Returns PromiseInterface
-     *
-     * Used by: Admin product listing
-     *
-     * @param int|null $storeId
-     * @return PromiseInterface
+     * @param array               $response ['failed' => [...]]
+     * @param ProductsInterface[] $items    [itemId => ProductsInterface]
+     * @return void
      */
-    public function listProducts($storeId = null): PromiseInterface
+    private function processBatchDeleteResponse(array $response, array $items): void
     {
-        $this->setStore($storeId);
-
-        $accountId = $this->getConfig()->getGoogleMerchantAccountId($storeId);
-
-        $request = new ListProductsRequest();
-        $request->setParent("accounts/{$accountId}");
-
-        try {
-            $promise = $this->getShoppingService()->listProductsAsync($request);
-
-            return $promise->then(
-                function ($response) use ($accountId) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'listProducts success accountId: ' . $accountId
-                    );
-                    return $response;
-                },
-                function ($reason) use ($accountId) {
-                    $this->googleHelper->writeDebugLogFile(
-                        'listProducts failed accountId: ' . $accountId . ' | Error: ' . $reason
-                    );
-                    return new RejectedPromise($reason);
-                }
+        foreach ($items as $itemId => $item) {
+            $item->setStatus(
+                isset($response['failed'][$itemId])
+                    ? ProductsInterface::FAILED_STATUS
+                    : ProductsInterface::DELETED_STATUS
             );
-        } catch (\Exception $e) {
-            $this->googleHelper->writeDebugLogFile($e);
-            return new RejectedPromise($e);
+            $item->setLastUpdatedToGoogle($this->googleHelper->getCurrentDateAndTime());
+            $this->productsRepository->save($item);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
+    /**
+     * @return GoogleConfig
+     */
     protected function getConfig()
     {
         if (!$this->googleConfig) {
@@ -489,16 +476,26 @@ class GoogleShopping
         return $this->googleConfig;
     }
 
+    /**
+     * @return mixed
+     */
     protected function getLogger()
     {
         return $this->googleHelper->getApiLogger();
     }
 
+    /**
+     * @return GoogleHelper
+     */
     public function getGoogleHelper()
     {
         return $this->googleHelper;
     }
 
+    /**
+     * @param int|null $storeId
+     * @return $this
+     */
     public function setStore($storeId = null)
     {
         $this->storeId = $storeId;

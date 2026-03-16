@@ -86,15 +86,16 @@ class ImageLink extends Base
             $url = $this->getImageUrl($product, 'product_page_image_small');
         }
 
-        if ($url && $url !== 'no_selection') {
+        if ($url && $url !== 'no_selection' && $this->isValidImageUrl($url)) {
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
             $googleAttributes->setImageLink($url);
         }
 
+        // Additional images
         $additionalImages = [];
         foreach ($productImageItems as $item) {
             $itemUrl = $item->getUrl();
-            if (count($additionalImages) < 10) {
+            if (count($additionalImages) < 10 && $this->isValidImageUrl($itemUrl)) {
                 $additionalImages[] = $this->getPwaUrl(
                     $product->getStore()->getBaseUrl(),
                     $itemUrl
@@ -110,6 +111,16 @@ class ImageLink extends Base
         return $shoppingProduct;
     }
 
+    /**
+     * Validate image URL — must start with http:// or https://
+     *
+     * @param string $url
+     * @return bool
+     */
+    private function isValidImageUrl(string $url): bool
+    {
+        return (bool) preg_match('/^https?:\/\/.+/i', $url);
+    }
 
     /**
      * Get Image Url

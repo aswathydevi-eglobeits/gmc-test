@@ -34,7 +34,7 @@ class Title extends Base
         }
 
         $mapValue = $this->getProductAttributeValue($product);
-        $name     = $this->getGroupAttributeName();
+        $name = $this->getGroupAttributeName();
         if ($name) {
             $mapValue = $name->getProductAttributeValue($product);
         }
@@ -45,7 +45,7 @@ class Title extends Base
             $titleText = $product->getName();
         } elseif ($parent) {
             $parentMapValue = $this->getProductAttributeValue($parent);
-            $parentName     = $this->getGroupAttributeName();
+            $parentName = $this->getGroupAttributeName();
             if ($parentName) {
                 $parentMapValue = $parentName->getProductAttributeValue($parent);
             }

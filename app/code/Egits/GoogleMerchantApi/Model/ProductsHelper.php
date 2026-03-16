@@ -353,6 +353,7 @@ class ProductsHelper
      */
     private function addAssociatedProductsToQueue(ProductInterface $product)
     {
+        $this->googleHelper->writeDebugLogFile($product->getSku());
         /** @var Product[] $associatedProducts */
         $associatedProducts = $product->getTypeInstance()->getUsedProducts($product);
         foreach ($associatedProducts as $child) {
@@ -392,6 +393,7 @@ class ProductsHelper
      */
     private function addProductToQueue(ProductInterface $product)
     {
+        $this->googleHelper->writeDebugLogFile($product->getSku());
         $productInQueue = $this->getProductFromQueue($product);
         if (!$productInQueue->getId()) {
             if (!$product->getData('is_product_save')) {
