@@ -29,7 +29,7 @@ class ShippingWeight extends Base
      * @inheritdoc
      * @throws \Zend_Date_Exception
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         $mapValue = $this->getProductAttributeValue($product);
         $weightUnit = $this->googleHelper->getDefaultWeightUnit() ?: self::WEIGHT_UNIT;

@@ -31,7 +31,7 @@ class Link extends Base
      * @return ProductInput
      * @throws LocalizedException
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         $url = $product->getProductUrl();
         if ($product->getVisibility() == Visibility::VISIBILITY_NOT_VISIBLE) {

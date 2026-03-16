@@ -111,12 +111,14 @@ class Sync extends Product
     public function execute()
     {
         $productId = (int)$this->getRequest()->getParam('product_id', null);
-
-        $result = $this->redirectFactory->create();
+        $result    = $this->redirectFactory->create();
         $result->setPath('catalog/product/edit', ['id' => $productId]);
+
         try {
-            $stores = $this->storeManager->getStores();
+            $stores   = $this->storeManager->getStores();
             $storeIds = array_keys($stores);
+            $failed   = false;
+
             foreach ($storeIds as $productStoreId) {
                 $config = $this->googleHelper->getConfig();
                 if (!$config->isGoogleMerchantApiEnabled($productStoreId)) {
@@ -125,8 +127,9 @@ class Sync extends Product
                 if (!$productId || !$productStoreId) {
                     throw new LocalizedException(__('invalid product or store!! Please try again.'));
                 }
+
                 $productObject = $this->productCatalogRepository->getById($productId, false, $productStoreId);
-                $item = $this->getProductDataExistInQueue($productId, $productStoreId);
+                $item          = $this->getProductDataExistInQueue($productId, $productStoreId);
 
                 if ($productObject->getTypeId() == 'configurable') {
                     $this->syncConfigurableProduct($item, $productObject, $productStoreId);
@@ -137,20 +140,26 @@ class Sync extends Product
                 if (!in_array(
                     $item->getStatus(),
                     [ProductsInterface::UPDATED_STATUS, ProductsInterface::DELETED_STATUS]
-                )
-                ) {
-                    $this->messageManager->addErrorMessage(
-                        __('Something went wrong while updating product!!, please review the log')
-                    );
-                    return $result;
+                )) {
+                    $failed = true;
                 }
 
+                $this->productsRepository->save($item);
+            }
+
+
+            if ($failed) {
+                $this->messageManager->addErrorMessage(
+                    __('Something went wrong while updating product!!, please review the log')
+                );
+            } else {
                 $this->messageManager->addSuccessMessage(
                     __('The product synced to google successfully!!')
                 );
-                $this->productsRepository->save($item);
             }
+
             return $result;
+
         } catch (Exception $exception) {
             $this->googleHelper->writeDebugLogFile($exception);
             $this->googleHelper->getApiLogger()->setStoreId($productStoreId)->setSyncType(0)->addMajor(

@@ -18,7 +18,7 @@ class Size extends Base
      * @param ProductAttributes $googleAttributes
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         $value = [];
         $value[] = $this->getProductAttributeValue($product);

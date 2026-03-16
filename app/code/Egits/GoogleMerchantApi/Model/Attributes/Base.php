@@ -64,21 +64,21 @@ class Base extends DataObject implements AttributeInterface
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         if (!$this->getName()) {
             return $shoppingProduct;
         }
-
         $value = $this->getProductAttributeValue($product);
-
-        if ($value) {
-            $name = $this->googleHelper->camelCase($this->getName());
-            if (property_exists($shoppingProduct, $name)) {
-                $shoppingProduct->$name = $value;
+        if ($value && $googleAttributes !== null) {
+            $name   = $this->googleHelper->camelCase($this->getName());
+            $setter = 'set' . ucfirst($name);
+            if (method_exists($googleAttributes, $setter)) {
+                $googleAttributes->$setter($value);
             }
         }
-
+        $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
 

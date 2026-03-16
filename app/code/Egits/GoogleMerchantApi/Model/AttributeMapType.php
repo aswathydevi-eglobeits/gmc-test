@@ -309,22 +309,9 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         $targetCountry   = $this->getTargetCountry();
         $contentLanguage = $this->googleHelper->getConfig()
             ->getDefaultContentLanguage($storeId) ?: 'en';
-
-        // offerId — your unique product identifier (SKU)
-        $newShoppingProduct->setOfferId((string) $productObject->getSku());
-
-        // contentLanguage — ISO 639-1 two-letter language code e.g. 'en'
+        $newShoppingProduct->setOfferId((string) $productObject->getSku(). '-' . $storeId);
         $newShoppingProduct->setContentLanguage(strtolower($contentLanguage));
-
-        // feedLabel — target country code e.g. 'US'
-        // Replaces the old targetCountry / feedLabel concept from Content API
         $newShoppingProduct->setFeedLabel(strtoupper($targetCountry));
-
-        // ❌ REMOVED: setChannel() does NOT exist in Merchant API v1 PHP client.
-        // Channel (ONLINE/LOCAL) is set automatically by the data source type
-        // configured in Google Merchant Center — no code needed here.
-
-        // Attach all product attributes to the ProductInput
         $newShoppingProduct->setProductAttributes($googleAttributes);
 
         return $newShoppingProduct;
@@ -342,8 +329,6 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      */
     protected function checkForValidProduct(ProductAttributes $googleAttributes): void
     {
-        // --- Age Group ---
-        // getAgeGroup() returns an int (enum). 0 == AGE_GROUP_UNSPECIFIED (not set).
         if (!$googleAttributes->getAgeGroup()
             || $googleAttributes->getAgeGroup() === MerchantAgeGroup::AGE_GROUP_UNSPECIFIED
         ) {
@@ -353,8 +338,6 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
             );
         }
 
-        // --- Gender ---
-        // getGender() returns an int (enum). 0 == GENDER_UNSPECIFIED (not set).
         if (!$googleAttributes->getGender()
             || $googleAttributes->getGender() === MerchantGender::GENDER_UNSPECIFIED
         ) {

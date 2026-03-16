@@ -38,7 +38,7 @@ class Destinations extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         $selectedOptions = $this->googleHelper->getConfig()->getDestinationExclude($product->getStoreId());
         $destinationExcludes = [];

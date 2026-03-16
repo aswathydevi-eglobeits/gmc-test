@@ -186,7 +186,6 @@ class Product
             throw $e;
         }
 
-        $this->insertProductToAllTargetCountry($product, $attributeMapType);
         return $this;
     }
 
@@ -223,8 +222,6 @@ class Product
             $product->setStatus(ProductsInterface::FAILED_STATUS);
             throw $e;
         }
-
-        $this->insertProductToAllTargetCountry($product, $attributeMapType);
         return $this;
     }
 
@@ -236,59 +233,59 @@ class Product
      * @return $this
      * @throws LocalizedException
      */
-    protected function insertProductToAllTargetCountry($product, $currentAttributeMapType)
-    {
-        $registry = $this->registry->registry(ProductQueueModel::TYPES_REGISTRY_KEY);
-        $targetCountry = $this->googleShopping->getGoogleHelper()
-            ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
-        $updatedCountry = [];
-        $updatedCountry[] = $currentAttributeMapType->getTargetCountry();
-        if (is_array($registry) && isset($registry[$product->getProductStoreId()])) {
-            $attributeTypes = $registry[$product->getProductStoreId()];
-            array_shift($attributeTypes);
-            if (count($attributeTypes) > 0) {
-                foreach ($attributeTypes as $country => $attributeMap) {
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        $item = $attributeMap->convertAttributes($product);
-                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                        $updatedCountry[] = $country;
-                    }
-                }
-
-                if (count($targetCountry) != count($updatedCountry)) {
-                    foreach ($targetCountry as $country) {
-                        if ($country !== $currentAttributeMapType->getTargetCountry()
-                            && !in_array($country, $updatedCountry)
-                        ) {
-                            $newAttributeMap = clone $currentAttributeMapType;
-                            $newAttributeMap->setId(null)
-                                ->setTargetCountry($country)
-                                ->setStoreId($product->getProductStoreId());
-                            $item = $newAttributeMap->convertAttributes($product);
-                            $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                        }
-                    }
-                }
-            } else {
-                foreach ($targetCountry as $country) {
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        $newAttributeMap = clone $currentAttributeMapType;
-                        $newAttributeMap->setId(null)
-                            ->setTargetCountry($country)
-                            ->setStoreId($product->getProductStoreId());
-                        $item = $newAttributeMap->convertAttributes($product);
-                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                    }
-                }
-            }
-        }
-
-        return $this;
-    }
+//    protected function insertProductToAllTargetCountry($product, $currentAttributeMapType)
+//    {
+//        $registry = $this->registry->registry(ProductQueueModel::TYPES_REGISTRY_KEY);
+//        $targetCountry = $this->googleShopping->getGoogleHelper()
+//            ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
+//        $updatedCountry = [];
+//        $updatedCountry[] = $currentAttributeMapType->getTargetCountry();
+//        if (is_array($registry) && isset($registry[$product->getProductStoreId()])) {
+//            $attributeTypes = $registry[$product->getProductStoreId()];
+//            array_shift($attributeTypes);
+//            if (count($attributeTypes) > 0) {
+//                foreach ($attributeTypes as $country => $attributeMap) {
+//                    if ($country !== $currentAttributeMapType->getTargetCountry()
+//                        && !in_array($country, $updatedCountry)
+//                    ) {
+//                        $item = $attributeMap->convertAttributes($product);
+//                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
+//                        $updatedCountry[] = $country;
+//                    }
+//                }
+//
+//                if (count($targetCountry) != count($updatedCountry)) {
+//                    foreach ($targetCountry as $country) {
+//                        if ($country !== $currentAttributeMapType->getTargetCountry()
+//                            && !in_array($country, $updatedCountry)
+//                        ) {
+//                            $newAttributeMap = clone $currentAttributeMapType;
+//                            $newAttributeMap->setId(null)
+//                                ->setTargetCountry($country)
+//                                ->setStoreId($product->getProductStoreId());
+//                            $item = $newAttributeMap->convertAttributes($product);
+//                            $this->googleShopping->insertProduct($item, $product->getProductStoreId());
+//                        }
+//                    }
+//                }
+//            } else {
+//                foreach ($targetCountry as $country) {
+//                    if ($country !== $currentAttributeMapType->getTargetCountry()
+//                        && !in_array($country, $updatedCountry)
+//                    ) {
+//                        $newAttributeMap = clone $currentAttributeMapType;
+//                        $newAttributeMap->setId(null)
+//                            ->setTargetCountry($country)
+//                            ->setStoreId($product->getProductStoreId());
+//                        $item = $newAttributeMap->convertAttributes($product);
+//                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
+//                    }
+//                }
+//            }
+//        }
+//
+//        return $this;
+//    }
 
     /**
      * Update product status

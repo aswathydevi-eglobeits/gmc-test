@@ -27,7 +27,7 @@ class Id extends Base
      * @return ProductInput
      * @throws LocalizedException
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         if (strlen($product->getSku()) > 30) {
             throw new LocalizedException(__('Product sku length exceeded 25 characters'));

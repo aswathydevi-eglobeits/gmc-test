@@ -10,6 +10,8 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
+
 /**
  * Class Condition
  * Google merchant api product condition attribute
@@ -26,15 +28,15 @@ class Condition extends Base
     public const CONDITION_REFURBISHED = 'refurbished';
 
     private const CONDITION_MAP = [
-        self::CONDITION_NEW         => 0,
-        self::CONDITION_USED        => 1,
+        self::CONDITION_NEW         => 1,
+        self::CONDITION_USED        => 3,
         self::CONDITION_REFURBISHED => 2,
     ];
 
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         $mapValue = $this->getProductAttributeValue($product);
 

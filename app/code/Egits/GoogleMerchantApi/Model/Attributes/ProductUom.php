@@ -23,7 +23,7 @@ class ProductUom extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         $availableUnits = [
             'mg',

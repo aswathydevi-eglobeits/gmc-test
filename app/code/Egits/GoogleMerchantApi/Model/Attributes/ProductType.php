@@ -68,7 +68,7 @@ class ProductType extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         $value = 'Home';
         $categoryIds = $product->getCategoryIds();

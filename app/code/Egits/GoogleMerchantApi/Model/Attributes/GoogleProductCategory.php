@@ -51,7 +51,7 @@ class GoogleProductCategory extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         $productCategories = $product->getCategoryIds();
         $productMappedCategories = $this->getMappedCategories($productCategories);

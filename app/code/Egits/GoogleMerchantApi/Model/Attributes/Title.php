@@ -22,34 +22,34 @@ class Title extends Base
     /**
      * @inheritdoc
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
-        $mapValue = $this->getProductAttributeValue($product);
-        $name = $this->getGroupAttributeName();
-        if ($name) {
-            $mapValue = $name->getProductAttributeValue($product);
-        }
-
         $parent = $product->getData('item_parent_product');
+
         if ($product->getVisibility() == Visibility::VISIBILITY_NOT_VISIBLE) {
             if (!$parent) {
                 $message = sprintf('Product %s :visibility issue', $product->getName());
                 throw new LocalizedException(__($message));
             }
+        }
 
-            $mapValue = $this->getProductAttributeValue($parent);
-            $name = $this->getGroupAttributeName();
-            if ($name) {
-                $mapValue = $name->getProductAttributeValue($parent);
-            }
+        $mapValue = $this->getProductAttributeValue($product);
+        $name     = $this->getGroupAttributeName();
+        if ($name) {
+            $mapValue = $name->getProductAttributeValue($product);
         }
 
         if ($mapValue) {
             $titleText = $mapValue;
-        } elseif ($product->getName() && ($product->getVisibility() != Visibility::VISIBILITY_NOT_VISIBLE)) {
+        } elseif ($product->getName()) {
             $titleText = $product->getName();
         } elseif ($parent) {
-            $titleText = $parent->getName();
+            $parentMapValue = $this->getProductAttributeValue($parent);
+            $parentName     = $this->getGroupAttributeName();
+            if ($parentName) {
+                $parentMapValue = $parentName->getProductAttributeValue($parent);
+            }
+            $titleText = $parentMapValue ?: $parent->getName();
         } else {
             $titleText = 'no title';
         }

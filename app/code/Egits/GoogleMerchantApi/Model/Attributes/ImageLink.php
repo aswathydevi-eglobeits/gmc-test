@@ -10,9 +10,8 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
+use Egits\GoogleMerchantApi\Helper\Data;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
-use Google\Shopping\Merchant\Products\V1\ProductAttributes;
-use Google\Shopping\Merchant\Products\V1\ProductInput;
 use Magento\Catalog\Block\Product\ListProduct;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Framework\App\Area;
@@ -66,11 +65,11 @@ class ImageLink extends Base
     /**
      * @inheritdoc
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Catalog\Model\Product $product
-     * @param ProductInput      $shoppingProduct
-     * @param ProductAttributes $googleAttributes
-     * @return ProductInput
+     * @param \Google\Shopping\Merchant\Products\V1\ProductInput $shoppingProduct
+     * @param mixed $googleAttributes
+     * @return \Google\Shopping\Merchant\Products\V1\ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct, $googleAttributes)
+    public function convertAttribute($product, $shoppingProduct, $googleAttributes = null)
     {
         $productImageItems = $product->getMediaGalleryImages()->getItems();
         if (empty($productImageItems)) {
@@ -87,31 +86,30 @@ class ImageLink extends Base
             $url = $this->getImageUrl($product, 'product_page_image_small');
         }
 
-        if ($url && $url != "no_selection") {
+        if ($url && $url !== 'no_selection') {
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
             $googleAttributes->setImageLink($url);
         }
 
-        // Additional images
         $additionalImages = [];
         foreach ($productImageItems as $item) {
+            $itemUrl = $item->getUrl();
             if (count($additionalImages) < 10) {
-                $additionalImages[] = $item->getUrl();
+                $additionalImages[] = $this->getPwaUrl(
+                    $product->getStore()->getBaseUrl(),
+                    $itemUrl
+                );
             }
         }
 
-        if (count($additionalImages) > 0) {
-            foreach ($additionalImages as &$additionalImageUrl) {
-                $additionalImageUrl = $this->getPwaUrl(
-                    $product->getStore()->getBaseUrl(),
-                    $additionalImageUrl
-                );
-            }
+        if (!empty($additionalImages)) {
             $googleAttributes->setAdditionalImageLinks($additionalImages);
         }
 
+        $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
+
 
     /**
      * Get Image Url
@@ -123,15 +121,11 @@ class ImageLink extends Base
     protected function getImageUrl($product, $imageType = '')
     {
         $storeId = $product->getStoreId();
-
         $this->appEmulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
-
         $imageBlock   = $this->blockFactory->createBlock(ListProduct::class);
         $productImage = $imageBlock->getImage($product, $imageType);
         $imageUrl     = $productImage->getImageUrl();
-
         $this->appEmulation->stopEnvironmentEmulation();
-
         return $imageUrl;
     }
 }

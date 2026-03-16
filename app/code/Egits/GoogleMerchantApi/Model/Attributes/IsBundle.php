@@ -24,7 +24,7 @@ class IsBundle extends Base
      * @param ProductInput $shoppingProduct
      * @return ProductInput
      */
-    public function convertAttribute($product, $shoppingProduct,$googleAttributes)
+    public function convertAttribute($product, $shoppingProduct,$googleAttributes = null)
     {
         if ($product->getTypeId() == 'bundle') {
             $googleAttributes->setIsBundle(true);
