@@ -423,9 +423,8 @@ class Synchronizer
 
                     /** @var AttributeMapType $attributeMap */
                     $attributeMap = $item->getType(
-                        $this->googleHelper->getConfig()->getEnabledTargetCountry()
+                        $this->googleHelper->getConfig()->getEnabledTargetCountry($item->getProductStoreId())
                     );
-
                     /** @var ProductInput $productInput */
                     $productInput = $attributeMap->convertAttributes($item);
 
