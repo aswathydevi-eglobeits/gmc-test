@@ -2,7 +2,10 @@
     "name": "eglobe-it-solutions/googlemerchantapi",
     "description": "Google Merchant API integration by eGlobe",
     "require": {
-        "google/apiclient": "^2.15"
+       "google/apiclient": "^2.15",
+        "google/shopping-merchant-accounts": "^1.3",
+        "google/shopping-merchant-products": "^1.3",
+        "guzzlehttp/promises": "^2.3"
     },
     "type": "magento2-module",
     "version": "2.3.0",
