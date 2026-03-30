@@ -47,25 +47,33 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
 
     /**
      * Map Magento AgeGroup string values to Merchant API v1 enum integers
+     * Values sourced from AgeGroup::getAllOptions()
      */
-    private const AGE_GROUP_MAP = [
-        'adult'   => MerchantAgeGroup::ADULT,
-        'kids'    => MerchantAgeGroup::KIDS,
-        'toddler' => MerchantAgeGroup::TODDLER,
-        'infant'  => MerchantAgeGroup::INFANT,
-        'newborn' => MerchantAgeGroup::NEWBORN,
-        ''        => MerchantAgeGroup::AGE_GROUP_UNSPECIFIED,
-    ];
+    private function getAgeGroupMap(): array
+    {
+        return [
+            'adult'   => MerchantAgeGroup::ADULT,
+            'kids'    => MerchantAgeGroup::KIDS,
+            'toddler' => MerchantAgeGroup::TODDLER,
+            'infant'  => MerchantAgeGroup::INFANT,
+            'newborn' => MerchantAgeGroup::NEWBORN,
+            ''        => MerchantAgeGroup::AGE_GROUP_UNSPECIFIED,
+        ];
+    }
 
     /**
      * Map Magento Gender string values to Merchant API v1 enum integers
+     * Values sourced from Gender::getAllOptions()
      */
-    private const GENDER_MAP = [
-        'male'   => MerchantGender::MALE,
-        'female' => MerchantGender::FEMALE,
-        'unisex' => MerchantGender::UNISEX,
-        ''       => MerchantGender::GENDER_UNSPECIFIED,
-    ];
+    private function getGenderMap(): array
+    {
+        return [
+            'male'   => MerchantGender::MALE,
+            'female' => MerchantGender::FEMALE,
+            'unisex' => MerchantGender::UNISEX,
+            ''       => MerchantGender::GENDER_UNSPECIFIED,
+        ];
+    }
 
     /**
      * @var ResourceModel\AttributeMapping\CollectionFactory
@@ -260,6 +268,19 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
     }
 
     /**
+     * Reset cached attribute mapping collection and attributes
+     * Called after clone to avoid stale cached data from source object
+     *
+     * @return $this
+     */
+    public function resetAttributeMappingCollection()
+    {
+        $this->attributeMappingCollection = null;
+        $this->attributesCollection       = [];
+        return $this;
+    }
+
+    /**
      * Convert attribute to model class object
      *
      * @param ProductsInterface $product
@@ -309,7 +330,9 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         $targetCountry   = $this->getTargetCountry();
         $contentLanguage = $this->googleHelper->getConfig()
             ->getDefaultContentLanguage($storeId) ?: 'en';
-        $newShoppingProduct->setOfferId((string) $productObject->getSku(). '-' . $storeId);
+        $newShoppingProduct->setOfferId(
+            $this->googleHelper->buildContentProductId($productObject->getSku(), $storeId)
+        );
         $newShoppingProduct->setContentLanguage(strtolower($contentLanguage));
         $newShoppingProduct->setFeedLabel(strtoupper($targetCountry));
         $newShoppingProduct->setProductAttributes($googleAttributes);
@@ -334,7 +357,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         ) {
             $defaultAgeGroup = strtolower(trim(AgeGroup::AGE_GROUP_DEFAULT_FOR_GOOGLE));
             $googleAttributes->setAgeGroup(
-                self::AGE_GROUP_MAP[$defaultAgeGroup] ?? MerchantAgeGroup::ADULT
+                $this->getAgeGroupMap()[$defaultAgeGroup] ?? MerchantAgeGroup::ADULT
             );
         }
 
@@ -343,7 +366,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         ) {
             $defaultGender = strtolower(trim(Gender::GENDER_DEFAULT_FOR_GOOGLE));
             $googleAttributes->setGender(
-                self::GENDER_MAP[$defaultGender] ?? MerchantGender::MALE
+                $this->getGenderMap()[$defaultGender] ?? MerchantGender::MALE
             );
         }
     }

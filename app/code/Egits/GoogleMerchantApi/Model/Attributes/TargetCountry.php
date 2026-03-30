@@ -28,10 +28,8 @@ class TargetCountry extends Base
         if ($value) {
             $shipping = new \Google\Shopping\Merchant\Products\V1\Shipping();
             $shipping->setCountry($value);
-
             $googleAttributes->setShipping([$shipping]);
         }
-
         return $googleAttributes;
     }
 }

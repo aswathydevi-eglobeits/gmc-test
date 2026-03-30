@@ -15,7 +15,6 @@ use Egits\GoogleMerchantApi\Api\Data\ProductsInterface;
 use Egits\GoogleMerchantApi\Model\AttributeMapType;
 use Egits\GoogleMerchantApi\Model\GoogleShopping;
 use Egits\GoogleMerchantApi\Model\Product as ProductModel;
-use Egits\GoogleMerchantApi\Model\Product as ProductQueueModel;
 use Exception;
 use Google\ApiCore\ApiException;
 use Magento\Framework\Exception\LocalizedException;
@@ -94,51 +93,20 @@ class Product
     protected function deleteProductFromAllTargetCountries($product)
     {
         $storeId = $product->getProductStoreId();
-
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()
-            ->getConfig()->getEnabledTargetCountry($storeId);
-
+        $enabledTargetCountryList = $this->getEnabledTargetCountries($storeId);
         $originalGoogleContentId = $product->getGoogleContentId();
-
-        $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
-            'deleteProductFromAllTargetCountries — originalId: ' . $originalGoogleContentId
-            . ' — countries: ' . implode(',', (array)$enabledTargetCountryList)
-        );
         if (empty($enabledTargetCountryList)) {
             $this->googleShopping->deleteProduct($originalGoogleContentId, $storeId);
         } else {
             foreach ($enabledTargetCountryList as $enabledCountry) {
                 try {
-                    $googleContentId = $originalGoogleContentId;
-                    if (strpos($googleContentId, '~') !== false) {
-                        $googleContentId = preg_replace(
-                            '/~([A-Z]{2,6})~/',
-                            '~' . $enabledCountry . '~',
-                            $googleContentId
-                        );
-                    } else {
-                        preg_match('/([a-z]{2}):([A-Z]{2,6})/', $googleContentId, $matches);
-                        if ($matches) {
-                            $language        = $matches[1];
-                            $googleContentId = preg_replace(
-                                '/([a-z]{2}):([A-Z]{2,6})/',
-                                $language . ':' . $enabledCountry,
-                                $googleContentId
-                            );
-                        }
-                    }
-
-                    $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
-                        'Deleting country ' . $enabledCountry . ': ' . $googleContentId
+                    $googleContentId = $this->buildCountrySpecificGoogleContentId(
+                        $originalGoogleContentId,
+                        $enabledCountry
                     );
                     $this->googleShopping->deleteProduct($googleContentId, $storeId);
-
                 } catch (ApiException $exception) {
-                    if ($exception->getCode() == 404) {
-                        $this->googleShopping->getGoogleHelper()->writeDebugLogFile(
-                            'Product not found (404) for country ' . $enabledCountry . ': ' . $googleContentId
-                        );
-                    } else {
+                    if ((int)$exception->getCode() !== 404) {
                         $this->googleShopping->getGoogleHelper()->writeDebugLogFile($exception);
                     }
                 } catch (Exception $exception) {
@@ -161,33 +129,7 @@ class Product
      */
     public function update($product)
     {
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()
-            ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
-
-        if (empty($enabledTargetCountryList)) {
-            throw new LocalizedException(
-                __(
-                    'No target Countries Enabled for store id %1.. failed to sync',
-                    $product->getProductStoreId()
-                )
-            );
-        }
-
-        $attributeMapType = $product->getType($enabledTargetCountryList);
-        try {
-            $item = $attributeMapType->convertAttributes($product);
-            $shoppingProduct = $this->googleShopping->updateProduct($item, $product->getProductStoreId());
-            $this->updateProductStatus($product, $shoppingProduct);
-            $this->insertProductToAllTargetCountry($product, $attributeMapType);
-        } catch (LocalizedException $exception) {
-            $product->setStatus(ProductsInterface::FAILED_STATUS);
-            throw $exception;
-        } catch (Exception $e) {
-            $product->setStatus(ProductsInterface::FAILED_STATUS);
-            throw $e;
-        }
-
-        return $this;
+        return $this->syncProduct($product, 'updateProduct');
     }
 
     /**
@@ -199,32 +141,7 @@ class Product
      */
     public function insert($product)
     {
-        $enabledTargetCountryList = $this->googleShopping->getGoogleHelper()->getConfig()->getEnabledTargetCountry(
-            $product->getProductStoreId()
-        );
-        if (empty($enabledTargetCountryList)) {
-            throw new LocalizedException(
-                __(
-                    'No target Countries Enabled for store id %1.. failed to sync',
-                    $product->getProductStoreId()
-                )
-            );
-        }
-
-        $attributeMapType = $product->getType($enabledTargetCountryList);
-        try {
-            $item = $attributeMapType->convertAttributes($product);
-            $shoppingProduct = $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-            $this->updateProductStatus($product, $shoppingProduct);
-            $this->insertProductToAllTargetCountry($product, $attributeMapType);
-        } catch (LocalizedException $exception) {
-            $product->setStatus(ProductsInterface::FAILED_STATUS);
-            throw $exception;
-        } catch (Exception $e) {
-            $product->setStatus(ProductsInterface::FAILED_STATUS);
-            throw $e;
-        }
-        return $this;
+        return $this->syncProduct($product, 'insertProduct');
     }
 
     /**
@@ -235,54 +152,40 @@ class Product
      * @return $this
      * @throws LocalizedException
      */
-    protected function insertProductToAllTargetCountry($product, $currentAttributeMapType)
+
+    protected function insertProductToAllTargetCountry($product, $currentAttributeMapType, $googleShoppingMethod = 'insertProduct')
     {
-        $registry = $this->registry->registry(ProductQueueModel::TYPES_REGISTRY_KEY);
-        $targetCountry = $this->googleShopping->getGoogleHelper()
-            ->getConfig()->getEnabledTargetCountry($product->getProductStoreId());
-        $updatedCountry = [];
-        $updatedCountry[] = $currentAttributeMapType->getTargetCountry();
-        if (is_array($registry) && isset($registry[$product->getProductStoreId()])) {
-            $attributeTypes = $registry[$product->getProductStoreId()];
-            array_shift($attributeTypes);
-            if (count($attributeTypes) > 0) {
-                foreach ($attributeTypes as $country => $attributeMap) {
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        $item = $attributeMap->convertAttributes($product);
-                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                        $updatedCountry[] = $country;
-                    }
+        $storeId         = $product->getProductStoreId();
+        $attributeTypes  = $this->getRegisteredAttributeTypes($storeId);
+        $targetCountries = $this->getEnabledTargetCountries($storeId);
+        $currentCountry  = $currentAttributeMapType->getTargetCountry();
+
+        foreach ($targetCountries as $country) {
+            if ($country === $currentCountry) {
+                continue;
+            }
+
+            try {
+                if (isset($attributeTypes[$country])) {
+                    $attributeMap = $attributeTypes[$country];
+                } else {
+                    $attributeMap = clone $currentAttributeMapType;
+                    $attributeMap->setId(null)
+                        ->setTargetCountry($country)
+                        ->setStoreId($storeId)
+                        ->resetAttributeMappingCollection();
                 }
 
-                if (count($targetCountry) != count($updatedCountry)) {
-                    foreach ($targetCountry as $country) {
-                        if ($country !== $currentAttributeMapType->getTargetCountry()
-                            && !in_array($country, $updatedCountry)
-                        ) {
-                            $newAttributeMap = clone $currentAttributeMapType;
-                            $newAttributeMap->setId(null)
-                                ->setTargetCountry($country)
-                                ->setStoreId($product->getProductStoreId());
-                            $item = $newAttributeMap->convertAttributes($product);
-                            $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                        }
-                    }
+                $item            = $attributeMap->convertAttributes($product);
+                $shoppingProduct = $this->googleShopping->{$googleShoppingMethod}($item, $storeId);
+                $this->updateProductStatus($product, $shoppingProduct);
+
+            } catch (ApiException $exception) {
+                if ((int)$exception->getCode() !== 404) {
+                    $this->googleShopping->getGoogleHelper()->writeDebugLogFile($exception);
                 }
-            } else {
-                foreach ($targetCountry as $country) {
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        $newAttributeMap = clone $currentAttributeMapType;
-                        $newAttributeMap->setId(null)
-                            ->setTargetCountry($country)
-                            ->setStoreId($product->getProductStoreId());
-                        $item = $newAttributeMap->convertAttributes($product);
-                        $this->googleShopping->insertProduct($item, $product->getProductStoreId());
-                    }
-                }
+            } catch (Exception $exception) {
+                $this->googleShopping->getGoogleHelper()->writeDebugLogFile($exception);
             }
         }
 
@@ -293,7 +196,7 @@ class Product
      * Update product status
      *
      * @param ProductsInterface|ProductModel $product
-     * @param null|\Google\Shopping\Merchant\Products\V1\Product $shoppingProduct  // ✅ CHANGED
+     * @param object|null $shoppingProduct
      * @return $this
      */
     protected function updateProductStatus($product, $shoppingProduct = null)
@@ -311,5 +214,89 @@ class Product
         }
 
         return $this;
+    }
+
+    /**
+     * @param int $storeId
+     * @return array
+     */
+    protected function getEnabledTargetCountries($storeId)
+    {
+        return (array)$this->googleShopping->getGoogleHelper()
+            ->getConfig()
+            ->getEnabledTargetCountry($storeId);
+    }
+
+    /**
+     * @param int $storeId
+     * @return array
+     */
+    protected function getRegisteredAttributeTypes($storeId)
+    {
+        $registry = $this->registry->registry(ProductsInterface::TYPES_REGISTRY_KEY);
+        if (is_array($registry) && isset($registry[$storeId])) {
+            return $registry[$storeId];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param ProductsInterface|ProductModel $product
+     * @param string $googleShoppingMethod
+     * @return $this
+     * @throws LocalizedException
+     * @throws Exception
+     */
+    protected function syncProduct($product, $googleShoppingMethod)
+    {
+        $storeId = $product->getProductStoreId();
+        $enabledTargetCountryList = $this->getEnabledTargetCountries($storeId);
+
+        if (empty($enabledTargetCountryList)) {
+            throw new LocalizedException(
+                __('No target Countries Enabled for store id %1.. failed to sync', $storeId)
+            );
+        }
+
+        $attributeMapType = $product->getType($enabledTargetCountryList);
+
+        try {
+            $item = $attributeMapType->convertAttributes($product);
+            $shoppingProduct = $this->googleShopping->{$googleShoppingMethod}($item, $storeId);
+            $this->updateProductStatus($product, $shoppingProduct);
+            $this->insertProductToAllTargetCountry($product, $attributeMapType);
+        } catch (LocalizedException $exception) {
+            $product->setStatus(ProductsInterface::FAILED_STATUS);
+            throw $exception;
+        } catch (Exception $exception) {
+            $product->setStatus(ProductsInterface::FAILED_STATUS);
+            throw $exception;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $googleContentId
+     * @param string $targetCountry
+     * @return string
+     */
+    protected function buildCountrySpecificGoogleContentId($googleContentId, $targetCountry)
+    {
+        if (strpos($googleContentId, '~') !== false) {
+            return (string)preg_replace(
+                '/~([A-Z]{2,6})~/',
+                '~' . $targetCountry . '~',
+                $googleContentId
+            );
+        }
+
+        return (string)preg_replace(
+            '/([a-z]{2}):([A-Z]{2,6})/',
+            '$1:' . $targetCountry,
+            $googleContentId,
+            1
+        );
     }
 }

@@ -57,6 +57,7 @@ class DataProvider extends AbstractDataProvider
 
         $items = $this->collection->getItems();
         foreach ($items as $attributeMappingType) {
+            $result = [];
             $result['attribute'] = $attributeMappingType->getData();
             foreach ($attributeMappingType->getAttributeMapping() as $mapping) {
                 $mappingId = $mapping->getId();

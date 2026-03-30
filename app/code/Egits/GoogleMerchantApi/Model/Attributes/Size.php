@@ -1,4 +1,13 @@
 <?php
+/**
+ * Eglobe IT Solutions (P)Ltd.
+ *
+ * @category    Egits
+ * @package     Egits_GoogleMerchantApi
+ * @copyright   Copyright (c) 2019 Eglobe IT Solutions. (http://www.eglobeits.com/)
+ * @author      Eglobe Magento Team <info@eglobeits.com>
+ *
+ */
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Google\Shopping\Merchant\Products\V1\ProductInput;
@@ -22,8 +31,6 @@ class Size extends Base
     {
         $value = [];
         $value[] = $this->getProductAttributeValue($product);
-
-        // FIX: setSizes() belongs on ProductAttributes, not ProductInput
         $googleAttributes->setSizes($value);
         $shoppingProduct->setProductAttributes($googleAttributes);
 

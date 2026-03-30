@@ -38,14 +38,7 @@ class GoogleConfig
     public const XML_PATH_ENABLE_BATCH_SYNC = 'enable_batch_import';
     public const XML_PATH_BATCH_SIZE = 'batch_size';
     public const XML_PATH_ACCOUNT_ID = 'account_id';
-
-    /**
-     * NEW: Merchant API v1 requires a Data Source ID (replaces Content API feed concept)
-     * Add this field in:
-     * Stores → Configuration → Egits Google Merchant → API Credentials → Data Source ID
-     */
     public const XML_PATH_DATA_SOURCE_ID = 'data_source_id';
-
     public const XML_PATH_DESTINATION_EXCLUDE = 'destination_exclude';
     public const XML_PATH_SERVICE_ACCOUNT_FILE = 'egits_google_merchant/api_credentials/merchant_service_account_file';
     public const XML_PATH_ENABLE_CRON = 'enable_cron';
@@ -416,7 +409,7 @@ class GoogleConfig
     }
 
     /**
-     * Check if product already synced to queue, if yes disable button
+     * Check if product already synced to queue,if yes disable button
      *
      * @param int|null $storeId
      * @return bool

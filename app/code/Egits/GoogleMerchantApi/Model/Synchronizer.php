@@ -640,80 +640,37 @@ class Synchronizer
         $updatedCountry   = [];
         $updatedCountry[] = $currentAttributeMapType->getTargetCountry();
 
+        $attributeTypes = [];
         if (is_array($registry) && isset($registry[$product->getProductStoreId()])) {
             $attributeTypes = $registry[$product->getProductStoreId()];
             array_shift($attributeTypes);
+        }
 
-            if (count($attributeTypes) > 0) {
-                foreach ($attributeTypes as $country => $attributeMap) {
-                    /** @var AttributeMapType $attributeMap */
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        /** @var ProductInput $productInput */
-                        $productInput  = $attributeMap->convertAttributes($product);
-                        $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
+        foreach ($targetCountry as $country) {
+            if ($country === $currentAttributeMapType->getTargetCountry()
+                || in_array($country, $updatedCountry)
+            ) {
+                continue;
+            }
 
-                        $this->batchInsertProducts[$product->getProductStoreId()]
-                        [$product->getId() . $batchIdSuffix] = $productInput;
-
-                        $updatedCountry[] = $country;
-                    }
-                }
-
-                if (count($targetCountry) != count($updatedCountry)) {
-                    foreach ($targetCountry as $country) {
-                        if ($country !== $currentAttributeMapType->getTargetCountry()
-                            && !in_array($country, $updatedCountry)
-                        ) {
-                            $newAttributeMap = clone $currentAttributeMapType;
-                            $newAttributeMap->setId(null)
-                                ->setTargetCountry($country)
-                                ->setStoreId($product->getProductStoreId());
-
-                            $productInput  = $newAttributeMap->convertAttributes($product);
-                            $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
-
-                            $this->batchInsertProducts[$product->getProductStoreId()]
-                            [$product->getId() . $batchIdSuffix] = $productInput;
-                        }
-                    }
-                }
+            if (isset($attributeTypes[$country])) {
+                $attributeMap = $attributeTypes[$country];
             } else {
-                foreach ($targetCountry as $country) {
-                    if ($country !== $currentAttributeMapType->getTargetCountry()
-                        && !in_array($country, $updatedCountry)
-                    ) {
-                        $newAttributeMap = clone $currentAttributeMapType;
-                        $newAttributeMap->setId(null)
-                            ->setTargetCountry($country)
-                            ->setStoreId($product->getProductStoreId());
-
-                        $productInput  = $newAttributeMap->convertAttributes($product);
-                        $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
-
-                        $this->batchInsertProducts[$product->getProductStoreId()]
-                        [$product->getId() . $batchIdSuffix] = $productInput;
-                    }
-                }
+                $attributeMap = clone $currentAttributeMapType;
+                $attributeMap->setId(null)
+                    ->setTargetCountry($country)
+                    ->setStoreId($product->getProductStoreId())
+                    ->resetAttributeMappingCollection();
             }
-        } else {
-            foreach ($targetCountry as $country) {
-                if ($country !== $currentAttributeMapType->getTargetCountry()
-                    && !in_array($country, $updatedCountry)
-                ) {
-                    $newAttributeMap = clone $currentAttributeMapType;
-                    $newAttributeMap->setId(null)
-                        ->setTargetCountry($country)
-                        ->setStoreId($product->getProductStoreId());
 
-                    $productInput  = $newAttributeMap->convertAttributes($product);
-                    $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
+            /** @var ProductInput $productInput */
+            $productInput  = $attributeMap->convertAttributes($product);
+            $batchIdSuffix = substr((float)time(), -4) . round((float)microtime() * 1000);
 
-                    $this->batchInsertProducts[$product->getProductStoreId()]
-                    [$product->getId() . $batchIdSuffix] = $productInput;
-                }
-            }
+            $this->batchInsertProducts[$product->getProductStoreId()]
+            [$product->getId() . $batchIdSuffix] = $productInput;
+
+            $updatedCountry[] = $country;
         }
     }
 
