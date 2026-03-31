@@ -10,7 +10,6 @@
 
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
-use Egits\GoogleMerchantApi\Helper\Data;
 use Egits\GoogleMerchantApi\Helper\GoogleHelper;
 use Magento\Catalog\Block\Product\ListProduct;
 use Magento\Catalog\Model\ProductRepository;
@@ -86,7 +85,7 @@ class ImageLink extends Base
             $url = $this->getImageUrl($product, 'product_page_image_small');
         }
 
-        if ($url && $url !== 'no_selection' && $this->isValidImageUrl($url)) {
+        if ($url && $url !== 'no_selection') {
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
             $googleAttributes->setImageLink($url);
         }
@@ -95,7 +94,7 @@ class ImageLink extends Base
         $additionalImages = [];
         foreach ($productImageItems as $item) {
             $itemUrl = $item->getUrl();
-            if (count($additionalImages) < 10 && $this->isValidImageUrl($itemUrl)) {
+            if (count($additionalImages) < 10) {
                 $additionalImages[] = $this->getPwaUrl(
                     $product->getStore()->getBaseUrl(),
                     $itemUrl
@@ -109,17 +108,6 @@ class ImageLink extends Base
 
         $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
-    }
-
-    /**
-     * Validate image URL — must start with http:// or https://
-     *
-     * @param string $url
-     * @return bool
-     */
-    private function isValidImageUrl(string $url): bool
-    {
-        return (bool) preg_match('/^https?:\/\/.+/i', $url);
     }
 
     /**

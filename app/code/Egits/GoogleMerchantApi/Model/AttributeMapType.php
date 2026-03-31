@@ -297,8 +297,12 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
 
         $map        = $this->getAttributesMapByProduct($productObject);
         $base       = $this->getBaseAttributes();
+        /** @var AttributeInterface[] $attributes */
         $attributes = array_merge($base, $map);
 
+        /**
+         * Parent Item Fix, if only simple non visible product is queued
+         */
         if (Visibility::VISIBILITY_NOT_VISIBLE == $productObject->getVisibility()
             && !$productObject->getData('item_parent_product')
         ) {
@@ -321,10 +325,6 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         $this->checkForIdentifierExist($googleAttributes);
         $this->checkForValidProduct($googleAttributes);
 
-        // ── Required fields on ProductInput (Merchant API v1) ──────────────────
-        // Content API: these were set inside the product body automatically.
-        // Merchant API v1: must be set explicitly as top-level fields on ProductInput.
-        // ─────────────────────────────────────────────────────────────────────────
 
         $storeId         = $productObject->getStoreId();
         $targetCountry   = $this->getTargetCountry();
@@ -345,9 +345,6 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
      * For some Google categories (e.g. 166) age group and gender are required.
      * If those values are not set then apply defaults.
      *
-     * Merchant API v1: setAgeGroup() and setGender() require enum integers,
-     * NOT plain strings as in the Content API.
-     *
      * @param ProductAttributes $googleAttributes
      */
     protected function checkForValidProduct(ProductAttributes $googleAttributes): void
@@ -366,15 +363,13 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
         ) {
             $defaultGender = strtolower(trim(Gender::GENDER_DEFAULT_FOR_GOOGLE));
             $googleAttributes->setGender(
-                $this->getGenderMap()[$defaultGender] ?? MerchantGender::MALE
+                $this->getGenderMap()[$defaultGender] ?? MerchantGender::UNISEX
             );
         }
     }
 
     /**
-     * If no unique product identifiers are present, set identifierExists = false.
-     *
-     * Merchant API v1: getGtin() is now getGtins() (repeated field).
+     * Check for identifier exist if no then set it no
      *
      * @param ProductAttributes $googleAttributes
      */
@@ -410,6 +405,7 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
                 ->getProductAttribute($product, $attribute->getAttributeId());
 
             if ($productAttribute) {
+                // define final attribute name
                 if ($attribute->getGoogleAttribute()) {
                     $name = $attribute->getGoogleAttribute();
                 } else {
@@ -419,10 +415,12 @@ class AttributeMapType extends AbstractModel implements AttributeMapTypeInterfac
                 if ($name) {
                     $name = $this->googleHelper->normalizeName($name);
                     if (isset($group[$name])) {
+                        // if attribute is in the group
                         if (!isset($result[$group[$name]])) {
                             $result[$group[$name]] = $this->createAttribute($group[$name]);
                         }
 
+                        // add group attribute to parent attribute
                         $result[$group[$name]]->addData(
                             [
                                 'group_attribute_' . $name => $this->createAttribute($name)->addData(

@@ -203,7 +203,8 @@ class GoogleShopping
 
         try {
             return $this->getProductInputsClient()->insertProductInput($request);
-        } catch (\Exception $e) {
+        }catch (ApiException $e) {
+            $this->getLogger()->error('Google API Error: ' . $e->getMessage());
             throw $e;
         }
     }
