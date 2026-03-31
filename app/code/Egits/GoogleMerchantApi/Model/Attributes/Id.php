@@ -51,6 +51,7 @@ class Id extends Base
         }
 
         $shoppingProduct->setOfferId($value);
+        $shoppingProduct->setProductAttributes($googleAttributes);
         return $shoppingProduct;
     }
 }

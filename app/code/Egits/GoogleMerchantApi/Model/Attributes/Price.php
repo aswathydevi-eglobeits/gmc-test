@@ -122,8 +122,7 @@ class Price extends Base
                     )->convertAttribute($product, $shoppingProduct, $googleAttributes);
                 }
             } else {
-                $shoppingPrice->setAmountMicros((int)(round((float)$price, 2) * 1000000));
-            }
+                $shoppingPrice->setAmountMicros((int)(round((float)$finalPrice, 2) * 1000000));            }
 
             // calculate taxes
             $tax = $this->getGroupAttributeTax();

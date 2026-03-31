@@ -67,6 +67,7 @@ class Link extends Base
             }
             $url = $this->getPwaUrl($product->getStore()->getBaseUrl(), $url);
             $googleAttributes->setLink($url);
+            $shoppingProduct->setProductAttributes($googleAttributes);
         }
 
         return $shoppingProduct;

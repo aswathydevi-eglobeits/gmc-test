@@ -11,7 +11,6 @@
 namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Google\Shopping\Merchant\Products\V1\Shipping;
-use Google\Shopping\Merchant\Products\V1\ProductAttributes;
 /**
  * Class TargetCountry
  * Google merchant api target country attribute
@@ -26,10 +25,11 @@ class TargetCountry extends Base
         $value = $product->getData('current_target_country');
 
         if ($value) {
-            $shipping = new \Google\Shopping\Merchant\Products\V1\Shipping();
+            $shipping = new Shipping();
             $shipping->setCountry($value);
             $googleAttributes->setShipping([$shipping]);
+            $shoppingProduct->setProductAttributes($googleAttributes);
         }
-        return $googleAttributes;
+        return $shoppingProduct;
     }
 }

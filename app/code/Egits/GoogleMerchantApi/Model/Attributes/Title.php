@@ -12,6 +12,7 @@ namespace Egits\GoogleMerchantApi\Model\Attributes;
 
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\Exception\LocalizedException;
+use Google\Shopping\Merchant\Products\V1\ProductAttributes;
 
 /**
  * Class Title
@@ -61,6 +62,7 @@ class Title extends Base
 
         $titleText = ucwords(strtolower($this->googleHelper->cleanAtomAttribute($titleText)));
         $googleAttributes->setTitle($titleText);
+        $shoppingProduct->setProductAttributes($googleAttributes);
 
         return $shoppingProduct;
     }
